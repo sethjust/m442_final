@@ -1,47 +1,15 @@
-// INCLUDES
-
-//#include <sys/socket.h>
-//#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+//#include <unistd.h>
 
-// DEFINES
+#include "network.h"
+#include "obj.h"
+#include "server.h"
 
 #define MODULUS 256 //FIXME
 
-// TYPES
-
-// An object is identified by its name and a random identifier.
-// TODO: add data carrying
-typedef struct _obj_t {
-  int id;
-  char* name;
-} obj_t;
-
-typedef struct _server_t {
-  enum _type {LOCAL, REMOTE} type;
-} server_t; //FIXME
-
 // FUNCTIONS
-
-obj_t* Obj(int id, char* name) {
-  // Pseudo-constructor for objects.
-  // Note that the name is copied, so the input may be reused.
-
-  obj_t* obj = (obj_t*) malloc(sizeof(obj_t));
-  obj->id = id;
-  obj->name = (char*) malloc(strlen(name) * sizeof(char));
-  strcpy(obj->name, name);
-
-  return obj;
-}
-
-char* tostr(obj_t* obj){
-  char* str = malloc(256 * sizeof(char));
-  sprintf(str, "{ %d : %s }", obj->id, obj->name);
-  return str;
-}
 
 long hash(obj_t* obj) { //FIXME
   long result;
@@ -71,9 +39,6 @@ server_t* next_server(long n) { //FIXME
   }
 }
 
-int is_local(server_t* server) {
-  return (server->type == LOCAL);
-}
 
 void local_add(obj_t* obj) { //FIXME
   printf("adding %s locally\n", tostr(obj));
@@ -98,16 +63,30 @@ void add(obj_t* obj) {
 }
 
 int main(int argc, char** argv) {
-  char str[256];
+//  char str[256];
+//
+//  int i = 0;
+//  while (1) {
+//    gets(str);
+//
+//    obj_t* obj = Obj(i, str);
+//    add(obj);
+//
+//    i++;
+//  }
 
-  int i = 0;
-  while (1) {
-    gets(str);
-
-    obj_t* obj = Obj(i, str);
-    add(obj);
-
-    i++;
+  if (argc < 1) {
+    printf("Usage: ./server port\n  Sets up a storage node listening on the specified port\n");
+    return -1;
   }
+  
+  int result;
+  int listener;
+
+  result = set_up_listener(atoi(argv[0]), &listener);
+  if (result < 0) return result;
+
+  while (1) {}
+
   return 0;
 }
