@@ -18,7 +18,7 @@ int build_address(char *hostname, int port, struct sockaddr_in *inet_address) {
 int set_up_listener(int port, int *listener) {
   // adapted from Jim Fix
   int listen_socket;
-  char hostname[128];
+//  char hostname[128];
   struct sockaddr_in address;
   int result;
 
@@ -26,9 +26,12 @@ int set_up_listener(int port, int *listener) {
   listen_socket = socket(PF_INET, SOCK_STREAM, TCP_PROTOCOL); 
   if (listen_socket == -1) return listen_socket;
 
-  if (gethostname(hostname,sizeof(hostname)) < 0) return -1;
-  result = build_address(hostname,port,&address);
-  if (result < 0) return result;
+//  if (gethostname(hostname,sizeof(hostname)) < 0) return -1;
+//  result = build_address(hostname,port,&address);
+//  if (result < 0) return result;
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = port;
   
   // bind it to a port on this machine
   result = bind(listen_socket,(struct sockaddr *)&address,sizeof(address)); 

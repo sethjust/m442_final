@@ -95,7 +95,10 @@ int main(int argc, char** argv) {
   int connection;
 
   result = set_up_listener(atoi(argv[1]), &listener);
-  if (result < 0) return result;
+  if (result < 0) {
+    printf("failed to set up listener (%s)\n", strerror(errno));
+    return result;
+  }
 
   while (1) {
     // The (currently unthreaded) main loop waits for a connection, and then processes a series of messages
