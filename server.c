@@ -1,15 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-//#include <unistd.h>
-
-#include "network.h"
-#include "obj.h"
 #include "server.h"
 
-#define MODULUS 256 //FIXME
-
 // FUNCTIONS
+
+int is_local(server_t* server) {
+  return (server->type == LOCAL);
+}
 
 long hash(obj_t* obj) { //FIXME
   long result;
@@ -39,16 +34,17 @@ server_t* next_server(long n) { //FIXME
   }
 }
 
-
-void local_add(obj_t* obj) { //FIXME
+int local_add(obj_t* obj) { //FIXME
   printf("adding %s locally\n", tostr(obj));
+  return 0;
 }
 
-void remote_add(server_t* server, obj_t* obj) { //FIXME
+int remote_add(server_t* server, obj_t* obj) { //FIXME
   printf("adding %s to remote server\n", tostr(obj));
+  return 0;
 }
 
-void add(obj_t* obj) {
+int add(obj_t* obj) {
   long n = hash(obj);
 
   printf("key is %lx for %s\n", n, tostr(obj));
@@ -56,25 +52,13 @@ void add(obj_t* obj) {
   server_t* server = next_server(n);
 
   if (is_local(server)) {
-    local_add(obj);
+    return local_add(obj);
   } else {
-    remote_add(server, obj);
+    return remote_add(server, obj);
   }
 }
 
 int main(int argc, char** argv) {
-//  char str[256];
-//
-//  int i = 0;
-//  while (1) {
-//    gets(str);
-//
-//    obj_t* obj = Obj(i, str);
-//    add(obj);
-//
-//    i++;
-//  }
-
   if (argc < 1) {
     printf("Usage: ./server port\n  Sets up a storage node listening on the specified port\n");
     return -1;
@@ -90,3 +74,16 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+//  char str[256];
+//
+//  int i = 0;
+//  while (1) {
+//    gets(str);
+//
+//    obj_t* obj = Obj(i, str);
+//    add(obj);
+//
+//    i++;
+//  }
+
