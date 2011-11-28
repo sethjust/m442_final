@@ -33,6 +33,8 @@ int set_up_listener(int port, int *listener) {
   // bind it to a port on this machine
   result = bind(listen_socket,(struct sockaddr *)&address,sizeof(address)); 
   if (result < 0) return result;
+
+  printf("Set up a listenter on port %d\n", port);
   
   // return the listener's socket descriptor
   *listener = listen_socket;

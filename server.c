@@ -58,8 +58,30 @@ int add(obj_t* obj) {
   }
 }
 
-char* process_msg(char* msg) {
-  return 0; //FIXME
+char* process_msg(char* message) {
+  if (
+      !strncmp(message, "STOP", 4)
+      ) { 
+    printf("Got stop\n");
+    return "ACK";
+  }
+  if (
+      !strncmp(message, "ADD", 3)
+      && message[3]==':'
+      ) { 
+    printf("Got add\n");
+
+    int i = 3;
+    char *name, *id;
+
+    name = strtok(&(message[i]), ":");
+    id = strtok(NULL, ":");
+
+    add(Obj(atoi(id), name));
+
+    return "ACK";
+  }
+  return "NACK";
 }
 
 int main(int argc, char** argv) {
@@ -72,7 +94,7 @@ int main(int argc, char** argv) {
   int listener;
   int connection;
 
-  result = set_up_listener(atoi(argv[0]), &listener);
+  result = set_up_listener(atoi(argv[1]), &listener);
   if (result < 0) return result;
 
   while (1) {
