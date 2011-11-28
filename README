@@ -1,0 +1,12 @@
+This project is meant to provide a distributed Python compute service. This
+repository currently contains only elements of the central distributed object
+store, written in C.
+
+The architecture of this store is a network of peer servers with some (as yet
+undecided) way of knowing about its peers. This code implements communication
+between servers via socket connections. Each server listens on a socket and
+sequentially accepts connections (hopefully this will become threaded at some
+point). Each connection is a series of two way string exchanges of the
+following format: first the connecting peer sends "COMMAND{:data}*" and the
+server responds with "[ACK|NACK]{:data}*". In both cases the data formatting is
+determined by the command sent.

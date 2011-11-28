@@ -12,4 +12,4 @@ int wait_for_connection(int listen_socket, int *connection);
 ssize_t recv_string(int socket, char *buffer, size_t maxlen);
 ssize_t send_string(int socket, char *buffer);
 int send_message(int bulletin_socket, char* message, char** response);
-void conn_listen(int bulletin_socket, char* process(char*, char*), char* saddr);
+void conn_listen(int socket, char* process(char*));

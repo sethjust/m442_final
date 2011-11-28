@@ -58,6 +58,10 @@ int add(obj_t* obj) {
   }
 }
 
+char* process_msg(char* msg) {
+  return 0; //FIXME
+}
+
 int main(int argc, char** argv) {
   if (argc < 1) {
     printf("Usage: ./server port\n  Sets up a storage node listening on the specified port\n");
@@ -66,11 +70,19 @@ int main(int argc, char** argv) {
   
   int result;
   int listener;
+  int connection;
 
   result = set_up_listener(atoi(argv[0]), &listener);
   if (result < 0) return result;
 
-  while (1) {}
+  while (1) {
+    // The (currently unthreaded) main loop waits for a connection, and then processes a series of messages
+    result = wait_for_connection(listener, &connection);
+    if (result < 0) return result;
+
+    conn_listen(connection, process_msg);
+    close(connection);
+  }
 
   return 0;
 }

@@ -108,15 +108,15 @@ int send_message(int bulletin_socket, char* message, char** response) {
   return 0;
 }
 
-void conn_listen(int bulletin_socket, char* process(char*, char*), char* saddr) {
+void conn_listen(int socket, char* process(char*)) {
   char buffer[256];
   int length;
   // repeatedly respond to lines sent by the client
   do {
     // receive a string from this client's connection socket
-    length = recv_string(bulletin_socket,buffer,255);
+    length = recv_string(socket,buffer,255);
 //    printf("Client says \"%s\".\n",buffer);
 
-    send_string(bulletin_socket, process(buffer, saddr)); // Note that process() may have side effects.
+    send_string(socket, process(buffer)); // Note that process() may have side effects.
   } while (length >= 0 && strcmp(buffer,"STOP")); 
 }
