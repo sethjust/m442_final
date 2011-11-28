@@ -120,7 +120,7 @@ void conn_listen(int socket, char* process(char*)) {
   do {
     // receive a string from this client's connection socket
     length = recv_string(socket,buffer,255);
-//    printf("Client says \"%s\".\n",buffer);
+    printf("Client says \"%s\".\n",buffer);
 
     send_string(socket, process(buffer)); // Note that process() may have side effects.
   } while (length >= 0 && strcmp(buffer,"STOP")); 

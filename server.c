@@ -59,6 +59,7 @@ int add(obj_t* obj) {
 }
 
 char* process_msg(char* message) {
+  printf("got message %s", message);
   if (
       !strncmp(message, "STOP", 4)
       ) { 
@@ -85,16 +86,25 @@ char* process_msg(char* message) {
 }
 
 int main(int argc, char** argv) {
-  if (argc < 1) {
-    printf("Usage: ./server port\n  Sets up a storage node listening on the specified port\n");
-    return -1;
+  if (argc > 2) {
+    fprintf(stderr,"server: too many arguments.\n");
+    fprintf(stderr,"usage: server [port]\n");
+    fprintf(stderr,"\tStarts an object storage server on port, or 11111 if no port is given.\n");
+    exit(-1);
+  }
+
+  int port;
+  if (argc>1) {
+    port = atoi(argv[1]);
+  } else {
+    port = 11111;
   }
   
   int result;
   int listener;
   int connection;
 
-  result = set_up_listener(atoi(argv[1]), &listener);
+  result = set_up_listener(port, &listener);
   if (result < 0) {
     printf("failed to set up listener (%s)\n", strerror(errno));
     return result;
@@ -103,9 +113,13 @@ int main(int argc, char** argv) {
   while (1) {
     // The (currently unthreaded) main loop waits for a connection, and then processes a series of messages
     result = wait_for_connection(listener, &connection);
-    if (result < 0) return result;
+    if (result < 0) {
+      printf("failed to get connection (%s)\n", strerror(errno));
+      return result;
+    }
 
     conn_listen(connection, process_msg);
+
     close(connection);
   }
 
