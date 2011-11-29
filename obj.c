@@ -1,11 +1,11 @@
 #include "obj.h"
 
-obj_t* Obj(int id, char* name) {
+obj_t* Obj(int salt, char* name) {
   // Pseudo-constructor for objects.
   // Note that the name is copied, so the input may be reused.
 
   obj_t* obj = (obj_t*) malloc(sizeof(obj_t));
-  obj->id = id;
+  obj->salt = salt;
   obj->name = (char*) malloc(strlen(name) * sizeof(char));
   strcpy(obj->name, name);
 
@@ -14,6 +14,6 @@ obj_t* Obj(int id, char* name) {
 
 char* tostr(obj_t* obj){
   char* str = malloc(256 * sizeof(char));
-  sprintf(str, "{ %d : %s }", obj->id, obj->name);
+  sprintf(str, "{ %d : %s }", obj->salt, obj->name);
   return str;
 }

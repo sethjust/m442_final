@@ -6,21 +6,23 @@ int is_local(server_t* server) {
   return (server->type == LOCAL);
 }
 
-long hash(obj_t* obj) { //FIXME
-  long result;
-  char ptr[256];
-
-  sprintf(ptr, "%s%d", obj->name, obj->id);
-
+unsigned long hash(obj_t* obj) {
+  // adapted from https://www.cse.yorku.ca/~oz/hash.html
+  unsigned long result = 5381; // 0b1010100000101
   char* i;
+
+  result += obj->salt;
   for (i=obj->name; i++; ) {
     if ((int) *i == 0) break;
-    result = (result + (int) *i) % MODULUS;
+    result = result * 33 + ((int) *i);
   }
+
+  result = result % MODULUS;
+  printf("key is %lx for %s\n", result, tostr(obj));
   return result;
 }
 
-server_t* next_server(long n) { //FIXME
+server_t* next_server(unsigned long n) { //FIXME
   server_t loc;
   loc.type = LOCAL;
 
@@ -45,9 +47,7 @@ int remote_add(server_t* server, obj_t* obj) { //FIXME
 }
 
 int add(obj_t* obj) {
-  long n = hash(obj);
-
-  printf("key is %lx for %s\n", n, tostr(obj));
+  unsigned long n = hash(obj);
 
   server_t* server = next_server(n);
 
@@ -58,29 +58,31 @@ int add(obj_t* obj) {
   }
 }
 
+int salt_counter = 1;
 char* process_msg(char* message) {
+
   printf("got message %s\n", message);
   if (
-      !strncmp(message, "STOP", 4)
+      !strncmp(message, "STOP", strlen("STOP"))
       ) { 
-    printf("Got stop\n");
+//    printf("Got stop\n");
     return "ACK";
   }
   if (
-      !strncmp(message, "ADD", 3)
+      !strncmp(message, "ADD", strlen("ADD"))
       && message[3]==':'
       ) { 
-    printf("Got add\n");
+//    printf("Got add\n");
 
-    int i = 3;
-    char *name, *id;
+    char *name;
 
-    name = strtok(&(message[i]), ":");
-    id = strtok(NULL, ":");
+    name = strtok(&(message[strlen("ADD")]), ":");
 
-    if (name == NULL || id == NULL) return "NACK";
+    if (name == NULL) return "NACK";
 
-    add(Obj(atoi(id), name));
+    salt_counter = salt_counter * 33 ^ 0x8159; // this is a dumb way of generating a random salt for each object
+    printf("salt_counter is %d\n", salt_counter);
+    add(Obj(salt_counter, name));
 
     return "ACK";
   }

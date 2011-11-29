@@ -13,8 +13,8 @@ typedef struct _server_t {
 } server_t; //TODO
 
 int is_local(server_t* server);
-long hash(obj_t* obj);
-server_t* next_server(long n);
+unsigned long hash(obj_t* obj);
+server_t* next_server(unsigned long n);
 int local_add(obj_t* obj);
 int remote_add(server_t* server, obj_t* obj);
 int add(obj_t* obj);

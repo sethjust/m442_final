@@ -16,9 +16,14 @@ def send_msg(s, msg):
   s.send(msg+"\0")
   return recv(s)
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("cerberus.sethjust.com", 26411));
+HOST = "cerberus.sethjust.com"
+PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
 
-print send_msg(s, "test")
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT));
+
+print send_msg(s, "ADD:seth")
+print send_msg(s, "ADD:seth")
+print send_msg(s, "ADD:seth")
 
 print send_msg(s, "STOP")
