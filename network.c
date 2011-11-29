@@ -30,8 +30,8 @@ int set_up_listener(int port, int *listener) {
 //  result = build_address(hostname,port,&address);
 //  if (result < 0) return result;
   address.sin_family = AF_INET;
-  address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_port = port;
+  address.sin_addr.s_addr = INADDR_ANY; // bind to all interfaces
+  address.sin_port = htons(port); // convert to network byte order, or else 11111 binds to 26411
   
   // bind it to a port on this machine
   result = bind(listen_socket,(struct sockaddr *)&address,sizeof(address)); 
@@ -123,5 +123,5 @@ void conn_listen(int socket, char* process(char*)) {
 //    printf("Client says \"%s\".\n",buffer);
 
     send_string(socket, process(buffer)); // Note that process() may have side effects.
-  } while (length >= 0 && strcmp(buffer,"STOP")); 
+  } while (length > 0 && strcmp(buffer,"STOP")); 
 }
