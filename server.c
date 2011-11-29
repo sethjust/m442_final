@@ -59,7 +59,7 @@ int add(obj_t* obj) {
 }
 
 char* process_msg(char* message) {
-  printf("got message %s", message);
+  printf("got message %s\n", message);
   if (
       !strncmp(message, "STOP", 4)
       ) { 
@@ -77,6 +77,8 @@ char* process_msg(char* message) {
 
     name = strtok(&(message[i]), ":");
     id = strtok(NULL, ":");
+
+    if (name == NULL || id == NULL) return "NACK";
 
     add(Obj(atoi(id), name));
 
