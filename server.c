@@ -17,9 +17,7 @@ unsigned long hash(obj_t* obj) {
     result = result * 33 + ((int) *i);
   }
 
-  result = result % MODULUS;
-  printf("key is %lx for %s\n", result, tostr(obj));
-  return result;
+  return result % MODULUS;
 }
 
 server_t* next_server(unsigned long n) { //FIXME
@@ -58,7 +56,7 @@ int add(obj_t* obj) {
   }
 }
 
-int salt_counter = 1;
+int salt_counter = 0;
 char* process_msg(char* message) {
 
   printf("got message %s\n", message);
@@ -80,9 +78,7 @@ char* process_msg(char* message) {
 
     if (name == NULL) return "NACK";
 
-    salt_counter = salt_counter * 33 ^ 0x8159; // this is a dumb way of generating a random salt for each object
-    printf("salt_counter is %d\n", salt_counter);
-    add(Obj(salt_counter, name));
+    add(Obj(salt_counter++, name)); // use & increment the salt
 
     return "ACK";
   }
