@@ -58,8 +58,13 @@ for B, C then requests A to send copies of all objects that hash between A and
 its predecessor (D, if no other servers exist). Note that there is NO global
 communication required for sucessful failover; other servers will not be aware
 of the failure until they attempt to make a connection to B.
-Adding servers to the network is made slightly harder by the fact that failures will leave out-of-date information on some servers. However, some one-to-all communication removes this issue, and allows a new server to come up with knowledge of only one other. In short, a new server begins with a list of at least one server and performs the following process:
+Adding servers to the network is made slightly harder by the fact that failures
+will leave out-of-date information on some servers. However, some one-to-all
+communication removes this issue, and allows a new server to come up with
+knowledge of only one other. In short, a new server begins with a list of at
+least one server and performs the following process:
   1. Request a server list from each known server
   2. For any unknown server returned, request a server list
   3. Repeat step 2 until no new servers are returned
-With the expectation that failures are rare this process should end within one or two repetitions.
+With the expectation that failures are rare this process should end within one
+or two repetitions.
