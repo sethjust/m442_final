@@ -21,6 +21,7 @@ unsigned long hash(obj_t* obj) {
 }
 
 server_t* next_server(unsigned long n) { //FIXME
+//  "SELECT * from servers WHERE hash > n ORDERED BY hash LIMIT 1
   server_t loc;
   loc.type = LOCAL;
 
@@ -66,9 +67,25 @@ char* process_msg(char* message) {
 //    printf("Got stop\n");
     return "ACK";
   }
-  if (
+  else if (
+      !strncmp(message, "ADDS", strlen("ADDS"))
+      && message[strlen("ADDS")] == ':'
+      ) {
+//    printf("Got adds\n");
+
+    char *host, *port, *id;
+
+    host = strtok(&(message[strlen("ADDS")]), ":");
+    port = strtok(NULL, ":");
+    id = strtok(NULL, ":");
+
+    if ( id == NULL ) return "NACK";  // if we get three tokens, we're
+                                      //(naïvely) good //FIXME
+    return "NACK"; //TODO
+  }
+  else if (
       !strncmp(message, "ADD", strlen("ADD"))
-      && message[3]==':'
+      && message[strlen("ADD")] == ':'
       ) { 
 //    printf("Got add\n");
 
@@ -82,7 +99,9 @@ char* process_msg(char* message) {
 
     return "ACK";
   }
-  return "NACK";
+  else {
+    return "NACK";
+  }
 }
 
 int main(int argc, char** argv) {
