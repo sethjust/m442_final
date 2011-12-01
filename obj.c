@@ -13,7 +13,8 @@ obj_t* Obj(int salt, char* name) {
 }
 
 char* tostr(obj_t* obj){
-  char* str = malloc(256 * sizeof(char));
+  char* str = malloc((12+strlen(obj->name)) * sizeof(char));
+      // the formatting should add at most 12 characters
   sprintf(str, "{ %d : %s }", obj->salt, obj->name);
   return str;
 }

@@ -39,7 +39,7 @@ PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT));
 
-for i in range(10):
-  print send_msg(s, "ADD:"+rname())
+for i in range(16):
+  print send_msg(s, "ADD:"+rname(2**i if (i<15) else 2**i-4))
 
 print send_msg(s, "STOP")
