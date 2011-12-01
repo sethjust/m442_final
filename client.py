@@ -12,12 +12,17 @@ def recv(s):
     d = d+c
   return d
 
-def send_msg(s, msg):
-  s.send(msg+"\0")
-  return recv(s)
+def send_msg(dest, msg):
+  l = len(msg)
+  header = "%04X"%l
+  s = reduce(lambda x,y: (x+y)%256, [ord(msg[i])+1 for i in range(0,len(msg))])
+  header += "%02X"%s
+  dest.send(header+msg+"\0")
+  return recv(dest)
+[ord("test"[i]) for i in range(0,len("test"))]
 
 def rname(len=8):
- return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
+  return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
 
 HOST = "localhost"
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111

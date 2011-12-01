@@ -113,14 +113,82 @@ int send_message(int bulletin_socket, char* message, char** response) {
   return 0;
 }
 
+int htoi (const char *ptr, int *result) {
+  // adapted from http://johnsantic.com/comp/htoi.html
+  int value = 0;
+  int count = 0;
+  char ch = *ptr;
+
+  for (;;) {
+    if (ch >= '0' && ch <= '9')
+      value = (value << 4) + (ch - '0');
+    else if (ch >= 'A' && ch <= 'F')
+      value = (value << 4) + (ch - 'A' + 10);
+    else if (ch >= 'a' && ch <= 'f')
+      value = (value << 4) + (ch - 'a' + 10);
+    else {
+      *result = value;
+      return count;
+    }
+    ch = *(++ptr);
+    count++;
+  }
+}
+
+int csum(const char* msg) {
+  int res;
+  char i = *msg;
+  for (;;) {
+    if (i==0) return res;
+    res = (res + i) % 256;
+    i=*(++msg);
+  }
+}
+
 void conn_listen(int socket, char* process(char*)) {
-  char buffer[256];
-  int length;
+  char* buffer;
+  char size[6]; // we allow 4 hex bytes for size; this allows messages to be at
+                // most 65536 bytes in length
+  int res, length, sum;
   // repeatedly respond to lines sent by the client
   do {
     // receive a string from this client's connection socket
-    length = recv_string(socket,buffer,255);
-//    printf("Client says \"%s\".\n",buffer);
+    res = recv_string(socket,size,5);
+    if (res!=6) {
+      printf("only recv'd %d hex digits\n", res);
+      send_string(socket, "NACK");
+      continue;
+    }
+
+    printf("Header is \"%s\".\n",size);
+
+    res = htoi(size, &sum); // parse the hex digits
+    if (!(res==6)) {
+      printf("only parsed %d hex digits\n", res);
+      send_string(socket, "NACK");
+      continue;
+    }
+
+    // now, noting that a hex digit is 4 bits, we can use bit ops instead of
+    // string ones:
+    length = sum >> 8; // drop the two characters off the right hand side
+    sum = sum - (length << 8); // leave only the last two in sum
+
+    buffer = (char*) malloc(length*sizeof(char));
+
+    res = recv_string(socket, buffer, length);
+    if (!(length == res)) {
+      printf("message had length %d, but said it was %d\n", res, length);
+      send_string(socket, "NACK");
+      continue;
+    }
+    if (!((res = csum(buffer)) == sum)) {
+      printf("\"%s\" had checksum %x, but said it was %x\n", buffer, res, sum);
+      send_string(socket, "NACK");
+      continue;
+    }
+
+    printf("Client says \"%s\".\n",buffer);
 
     send_string(socket, process(buffer)); // Note that process() may have side effects.
   } while (length > 0 && strcmp(buffer,"STOP")); 
