@@ -83,7 +83,7 @@ ssize_t recv_string(int socket, char *buffer, size_t maxlen) {
 
 ssize_t send_string(int socket, char *buffer) {
   // from Jim Fix
-  ssize_t     nwritten;
+  ssize_t nwritten;
   int pos = 0;
   int len = strlen(buffer)+1;
   while (pos < len) {
@@ -99,18 +99,14 @@ ssize_t send_string(int socket, char *buffer) {
   return pos;
 }
 
-int send_message(int bulletin_socket, char* message, char** response) {
+int send_message(int socket, char* message) {
   int result;
-  char* buffer = (char*) malloc(sizeof(char)*256);
+  char* buffer = (char*)malloc((6+strlen(message)+1)*sizeof(char));
+  sprintf(buffer, "%04X%02X%s", (unsigned int)strlen(message), csum(message), message);
 
-  result = send_string(bulletin_socket,message);
+  result = send_string(socket,buffer);
   if (!(result == strlen(message))) return -1;
-  
-  result = recv_string(bulletin_socket,buffer,255);
-  if (result < 0) return -1;
-
-  *response = buffer;
-  return 0;
+  else return 0;
 }
 
 int htoi (const char *ptr, int *result) {
@@ -137,11 +133,11 @@ int htoi (const char *ptr, int *result) {
 
 int csum(const char* msg) {
   int res;
-  char i = *msg;
+  const char* i = msg;
   for (;;) {
-    if (i==0) return res;
-    res = (res + i) % 256;
-    i=*(++msg);
+    if (*i==0) return res;
+    res = (res + *i) % 256;
+    i = i+1;
   }
 }
 
@@ -160,12 +156,10 @@ void conn_listen(int socket, char* process(char*)) {
       continue;
     }
 
-    printf("Header is \"%s\".\n",size);
-
     res = htoi(size, &sum); // parse the hex digits
     if (!(res==6)) {
       printf("only parsed %d hex digits\n", res);
-      send_string(socket, "NACK");
+      send_message(socket, "NACK");
       continue;
     }
 
@@ -179,17 +173,17 @@ void conn_listen(int socket, char* process(char*)) {
     res = recv_string(socket, buffer, length);
     if (!(length == res)) {
       printf("message had length %d, but said it was %d\n", res, length);
-      send_string(socket, "NACK");
+      send_message(socket, "NACK");
       continue;
     }
     if (!((res = csum(buffer)) == sum)) {
       printf("\"%s\" had checksum %x, but said it was %x\n", buffer, res, sum);
-      send_string(socket, "NACK");
+      send_message(socket, "NACK");
       continue;
     }
 
     printf("Client says \"%s\".\n",buffer);
 
-    send_string(socket, process(buffer)); // Note that process() may have side effects.
+    send_message(socket, process(buffer)); // Note that process() may have side effects.
   } while (length > 0 && strcmp(buffer,"STOP")); 
 }

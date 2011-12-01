@@ -3,6 +3,9 @@
 import sys,socket
 import random,string
 
+class RecvError (Exception):
+  pass
+
 def recv(s):
   d = ""
   while (1):
@@ -10,16 +13,22 @@ def recv(s):
     if ord(c) == 0:
       break;
     d = d+c
-  return d
+
+  length = int(d[0:4], 16)
+  s = int(d[4:6], 16)
+
+  if ( length != len(d[6:]) | s != csum(d[6:]) ):
+    raise RecvError
+
+  return d[6:]
+
+def csum(msg):
+ return reduce(lambda x,y: (x+y)%256, [ord(msg[i]) for i in range(0,len(msg))])
 
 def send_msg(dest, msg):
-  l = len(msg)
-  header = "%04X"%l
-  s = reduce(lambda x,y: (x+y)%256, [ord(msg[i])+1 for i in range(0,len(msg))])
-  header += "%02X"%s
+  header = "%04X%02X"%(len(msg),csum(msg))
   dest.send(header+msg+"\0")
   return recv(dest)
-[ord("test"[i]) for i in range(0,len("test"))]
 
 def rname(len=8):
   return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
