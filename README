@@ -6,15 +6,60 @@ The architecture of this store is a network of peer servers with some (as yet
 undecided) way of knowing about its peers. This code implements communication
 between servers via socket connections. Each server listens on a socket and
 sequentially accepts connections (hopefully this will become threaded at some
-point).
-Each connection is a series of two way null-terminated string exchanges of the
-following format: first the connecting peer sends "COMMAND{:data}*" and the
-server responds with "[ACK|NACK]{:data}*". In both cases the data formatting is
-determined by the command sent.
-Each string is preceeded by a 6 hexadecimal digits. The first four characters
-indicate the length (in bytes, not including the null terminator) of the
-message to follow (allowing messages up to 65536 bytes), while the final two
-are the sum of all the bytes in the message (modulo 16^2).
-All clients should send the message "STOP" before closing the socket. (This is
-technically unneccessary, as a zero-length message results from the socket
-closing, but is considered polite). 
+point).  Each connection is a series of two way null-terminated string
+exchanges of the following format: first the connecting peer sends
+"COMMAND{:data}*" and the server responds with "[ACK|NACK]{:data}*". In both
+cases the data formatting is determined by the command sent.  Each string is
+preceeded by a 6 hexadecimal digits. The first four characters indicate the
+length (in bytes, not including the null terminator) of the message to follow
+(allowing messages up to 65536 bytes), while the final two are the sum of all
+the bytes in the message (modulo 16^2).  All clients should send the message
+"STOP" before closing the socket. (This is technically unneccessary, as a
+zero-length message results from the socket closing, but is considered polite). 
+
+The following commands are processed by storage nodes:
+  SADD:host:port:salt -> ACK -- add a server record
+  ADD:name:bytes -> ACK:salt -- upload a file
+  BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
+  JADD:name:sourcefile:outputname -> ACK:outputsalt -- add a job
+  GET:name:salt -> ACK:bytes -- get the contents of a file
+  GETS -> ACK{:host:port:salt}* -- get a server table
+  SUCC -> ACK -- notify a server that their successor has gone down
+
+Objects are stored in "cloud" of peer servers using a relatively simple
+consistent hashing scheme. All stored objects (servers, jobs, and files) are
+given an arbitrary-length name and an integer salt, which is used to produce a
+32-bit hash value. These hash values determine the storage location of an
+object, namely the immediately subsequent server(s) in keyspace. Any server
+will accept requests concering any object, but may make connections with other
+servers before responding. Note that the salt associated with a server object
+allows any machine to have multiple distinct locations in keyspace; this is an
+intended feature to aid load-balancing.
+Because we are not worrying about multiple server failures, we need only keep
+two copies of any piece of data to ensure it is not lost. Thus objects are
+stored on two subsequent servers. Note that at the moment there is no guarantee
+that these servers are distinct.
+This hashing and duplication scheme allows for a simple failover method, which
+is best explained by considering an established network of at least four
+servers, subsequent to one another in keyspace, and an object O that is stored
+on B.
+    A ---O- B ----- C ----- D
+When host B fails, initially no server is aware of the failure. However, when
+some request is made for O, the connection with server B will fail, making the
+requesting server aware of the failure. Note that if the first request for O is
+sourced from a client, they are expected to attempt contacting other servers if
+their attempt to reach B fails. The request will then be forwarded to C, which,
+after attempting to get O from its canonical location, will recognize the
+failure of B. Note that C will always recognize B's failure after one request,
+and so should be responsible for repairing the failure. It does so by copying
+all (locally stored) objects with hashes falling between A and B to D, thus
+taking over the primary storage capacity for B. To take over secondary storage
+for B, C then requests A to send copies of all objects that hash between A and
+its predecessor (D, if no other servers exist). Note that there is NO global
+communication required for sucessful failover; other servers will not be aware
+of the failure until they attempt to make a connection to B.
+Adding servers to the network is made slightly harder by the fact that failures will leave out-of-date information on some servers. However, some one-to-all communication removes this issue, and allows a new server to come up with knowledge of only one other. In short, a new server begins with a list of at least one server and performs the following process:
+  1. Request a server list from each known server
+  2. For any unknown server returned, request a server list
+  3. Repeat step 2 until no new servers are returned
+With the expectation that failures are rare this process should end within one or two repetitions.
