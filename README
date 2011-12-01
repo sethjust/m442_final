@@ -7,11 +7,14 @@ undecided) way of knowing about its peers. This code implements communication
 between servers via socket connections. Each server listens on a socket and
 sequentially accepts connections (hopefully this will become threaded at some
 point).
-Each connection is a series of two way null-terminated string exchanges of the following
-format: first the connecting peer sends "COMMAND{:data}*" and the server
-responds with "[ACK|NACK]{:data}*". In both cases the data formatting is
+Each connection is a series of two way null-terminated string exchanges of the
+following format: first the connecting peer sends "COMMAND{:data}*" and the
+server responds with "[ACK|NACK]{:data}*". In both cases the data formatting is
 determined by the command sent.
-Each string is preceeded by a 6 hexadecimal digits. The first four characters indicate the length (in bytes, not including the null terminator) of the message to follow (allowing messages up to 65536 bytes), while the final two are the sum of all the bytes in the message (modulo 16^2).
+Each string is preceeded by a 6 hexadecimal digits. The first four characters
+indicate the length (in bytes, not including the null terminator) of the
+message to follow (allowing messages up to 65536 bytes), while the final two
+are the sum of all the bytes in the message (modulo 16^2).
 All clients should send the message "STOP" before closing the socket. (This is
 technically unneccessary, as a zero-length message results from the socket
 closing, but is considered polite). 
