@@ -26,6 +26,8 @@ def csum(msg):
  return reduce(lambda x,y: (x+y)%256, [ord(msg[i]) for i in range(0,len(msg))])
 
 def send_msg(dest, msg):
+  if len("%x"%(len(msg)))>4:
+    return "NACK:msg too long"
   header = "%04X%02X"%(len(msg),csum(msg))
   dest.send(header+msg+"\0")
   return recv(dest)
@@ -39,7 +41,7 @@ PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT));
 
-for i in range(16):
-  print send_msg(s, "ADD:"+rname(2**i if (i<15) else 2**i-4))
+for i in range(3,17):
+  print send_msg(s, "ADD:"+rname(2**i-4))
 
 print send_msg(s, "STOP")
