@@ -17,7 +17,7 @@ def recv(s):
   length = int(d[0:4], 16)
   s = int(d[4:6], 16)
 
-  if ( length != len(d[6:]) | s != csum(d[6:]) ):
+  if ( length != len(d[6:]) or s != csum(d[6:]) ):
     raise RecvError
 
   return d[6:]
@@ -35,15 +35,18 @@ def send_msg(dest, msg):
 def rname(len=8):
   return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
 
-HOST = "localhost"
-PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
+if __name__ == '__main__':
+  HOST = "localhost"
+  PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT));
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.connect((HOST, PORT));
 
-#for i in range(3,17):
+  for i in range(3,17):
 #  print send_msg(s, "ADD:"+rname(2**i-4))
-print send_msg(s, "SADD:127.0.0.1:11112:0")
-print send_msg(s, "GETS")
+    print send_msg(s, "ADD:"+rname(10))
 
-print send_msg(s, "STOP")
+#print send_msg(s, "SADD:127.0.0.1:11112:0")
+#print send_msg(s, "GETS")
+
+  print send_msg(s, "STOP")

@@ -24,38 +24,24 @@ int is_local(server_t* server) {
   return (server->type == LOCAL);
 }
 
-unsigned long hash(obj_t* obj) {
-  // adapted from https://www.cse.yorku.ca/~oz/hash.html
-  unsigned long result = 5381; // 0b1010100000101
-  char* i;
-
-  result += obj->salt;
-  for (i=obj->name; i++; ) {
-    if ((int) *i == 0) break;
-    result = result * 33 + ((int) *i);
-  }
-
-  return result % MODULUS;
-}
-
-server_t* next_server(unsigned long n) { //FIXME
-//  "SELECT * from servers WHERE hash > n ORDERED BY hash LIMIT 1
+server_t* next_server(hash_t n) { //FIXME
+//  "SELECT * from servers WHERE hash > n ORDER BY hash LIMIT 1
   server_t loc;
   loc.type = LOCAL;
 
   server_t rem;
   rem.type = REMOTE;
 
-  if (n < MODULUS/2) {
+  if (n < (MODULUS/2)) {
     return &loc;
   } else {
     return &rem;
   }
 }
 
-int local_add(obj_t* obj) { //FIXME
+int local_add(obj_t* obj) {
   printf("adding %s locally\n", tostr(obj));
-  return 0;
+  return local_add_object(obj);
 }
 
 int remote_add(server_t* server, obj_t* obj) { //FIXME
@@ -64,7 +50,7 @@ int remote_add(server_t* server, obj_t* obj) { //FIXME
 }
 
 int add(obj_t* obj) {
-  unsigned long n = hash(obj);
+  hash_t n = hash(obj);
 
   server_t* server = next_server(n);
 
@@ -77,8 +63,8 @@ int add(obj_t* obj) {
 
 int salt_counter = 0;
 char* process_msg(char* message) {
+//  printf("got message %s\n", message);
 
-  printf("got message %s\n", message);
   if (
       !strncmp(message, "STOP", strlen("STOP"))
       ) { 
@@ -113,9 +99,24 @@ char* process_msg(char* message) {
 
     if (name == NULL) return "NACK";
 
-    add(Obj(salt_counter++, name)); // use & increment the salt
+//    obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata) {
+    byte_t* bytes = (byte_t*) malloc(sizeof(byte_t));
+    bytes[0]=0;
+    obj_t* obj = Obj(salt_counter++, name, bytes, 1, ""); // use & increment the salt
 
-    return "ACK";
+    if (add(obj)) return "NACK";
+
+    char* buffer = (char*) malloc(20*sizeof(char));
+    sprintf(buffer, "ACK:%08X", obj->hash);
+    if (file_hash_exists(obj->hash)) {
+        printf("%s\n", tostr(local_get_object(obj->hash)));
+    } else {
+        printf("could not find hash %08X\n", obj->hash);
+    }
+//    bool file_hash_exists(hash_t hash);
+//    obj_t *local_get_object(hash_t hash)
+
+    return buffer;
   }
   // BADD
   // JADD
@@ -125,11 +126,9 @@ char* process_msg(char* message) {
       ) {
     printf("got gets\n");
 
-    // get results from DB
+    //TODO: get results from DB
 
-    char* buffer = "ACK:127.0.0.1:11111:0"; //FIXME
-
-    return buffer;
+    return "ACK:127.0.0.1:11111:0"; //FIXME
   }
   // SUCC
   else {
@@ -170,13 +169,15 @@ int main(int argc, char** argv) {
     port = atoi(argv[1]);
   }
 
+  init_db();
+
   result = set_up_listener(port, &listener);
   if (result < 0) {
     printf("failed to set up listener (%s)\n", strerror(errno));
     return result;
   }
   
-  if (argc > 1) {
+  if (argc > 2) {
     // bring us up on the network
     char* server = argv[2];
     int sport = atoi(argv[3]);
