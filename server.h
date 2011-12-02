@@ -5,6 +5,7 @@
 
 #include "network.h"
 #include "obj.h"
+#include "sql.h"
 
 #define MODULUS 256 //FIXME
 

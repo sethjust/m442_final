@@ -2,6 +2,24 @@
 
 // FUNCTIONS
 
+sqlite3 *db_file;
+sqlite3 *db_node;
+
+static void init_db(void)
+{
+    /* Open a db file for writing values. */
+    if (sqlite3_open("", &db_file) != SQLITE_OK)
+    {
+        fprintf(stderr, "SQLite: %s\n", sqlite3_errmsg(db_file));
+        fprintf(stderr, "Critical database error. Shutting down...\n");
+        sqlite3_close(db_file);
+        exit(EXIT_FAILURE);
+    }
+    make_file_table();
+
+    /* FIXME: Add db for nodes. */
+}
+
 int is_local(server_t* server) {
   return (server->type == LOCAL);
 }
