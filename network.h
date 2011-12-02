@@ -9,6 +9,7 @@
 
 int build_address(char *hostname, int port, struct sockaddr_in *inet_address);
 int set_up_listener(int port, int *listener);
+int make_connection_with(char *hostname, int port, int *connection);
 int wait_for_connection(int listen_socket, int *connection);
 ssize_t recv_string(int socket, char *buffer, size_t maxlen);
 ssize_t send_string(int socket, char *buffer);

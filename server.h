@@ -18,3 +18,4 @@ server_t* next_server(unsigned long n);
 int local_add(obj_t* obj);
 int remote_add(server_t* server, obj_t* obj);
 int add(obj_t* obj);
+int init_server_table(char* server, int port);

@@ -10,7 +10,7 @@ int build_address(char *hostname, int port, struct sockaddr_in *inet_address) {
     // success!
     inet_address->sin_family = AF_INET;
     inet_address->sin_addr.s_addr = *((uint32_t *)host_entries->h_addr_list[0]);
-    inet_address->sin_port = port;
+    inet_address->sin_port = htons(port);
     return 0;
   }
 }
@@ -41,6 +41,28 @@ int set_up_listener(int port, int *listener) {
   
   // return the listener's socket descriptor
   *listener = listen_socket;
+  return 0;
+}
+
+int make_connection_with(char *hostname, int port, int *connection) {
+  // from jim fix
+  int sock;
+  struct sockaddr_in address;
+  int lookup_result, connect_result;
+
+  // grab a new socket to connect with the server
+  sock = socket(PF_INET, SOCK_STREAM, TCP_PROTOCOL);
+  if (sock == -1) return sock;
+
+  lookup_result = build_address(hostname,port,&address);
+  if (lookup_result < 0) return lookup_result;
+
+  // connect with that server
+  connect_result = connect(sock,(struct sockaddr *)&address,sizeof(address));
+  if (connect_result < 0) return connect_result;
+
+  // return the connection's socket descriptor
+  *connection = sock;
   return 0;
 }
 

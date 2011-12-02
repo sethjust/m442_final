@@ -26,6 +26,16 @@ The following commands are processed by storage nodes:
   GETS -> ACK{:host:port:salt}* -- get a server table
   SUCC -> ACK -- notify a server that their successor has gone down
 
+A word on data representation:
+  hostnames are strings; dotted quads or dns names
+  ports are decimal integers of variable width
+  salts are hexadecimal integers of variable width
+  names are strings
+  bytes are encoded in an as-yet-undecided manner
+  filenames are names
+Servers will make a best-faith effort to interpret these in a reasonable (i.e.
+human-intuitive) manner.
+
 Objects are stored in "cloud" of peer servers using a relatively simple
 consistent hashing scheme. All stored objects (servers, jobs, and files) are
 given an arbitrary-length name and an integer salt, which is used to produce a

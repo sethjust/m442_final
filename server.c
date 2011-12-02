@@ -64,30 +64,30 @@ char* process_msg(char* message) {
   if (
       !strncmp(message, "STOP", strlen("STOP"))
       ) { 
-//    printf("Got stop\n");
     return "ACK";
   }
   else if (
-      !strncmp(message, "ADDS", strlen("ADDS"))
-      && message[strlen("ADDS")] == ':'
+      !strncmp(message, "SADD", strlen("SADD"))
+      && message[strlen("SADD")] == ':'
       ) {
-//    printf("Got adds\n");
 
-    char *host, *port, *id;
+    char *host, *port, *salt;
 
     host = strtok(&(message[strlen("ADDS")]), ":");
     port = strtok(NULL, ":");
-    id = strtok(NULL, ":");
+    salt = strtok(NULL, ":");
 
-    if ( id == NULL ) return "NACK";  // if we get three tokens, we're
+    if ( salt == NULL ) return "NACK";  // if we get three tokens, we're
                                       //(naïvely) good //FIXME
-    return "NACK"; //TODO
+
+    printf("adding %s:%d:%s\n", host, atoi(port), salt); //FIXME: placeholder for call
+
+    return "ACK";
   }
   else if (
       !strncmp(message, "ADD", strlen("ADD"))
       && message[strlen("ADD")] == ':'
       ) { 
-//    printf("Got add\n");
 
     char *name;
 
@@ -99,26 +99,49 @@ char* process_msg(char* message) {
 
     return "ACK";
   }
+  // BADD
+  // JADD
+  // GET
+  else if (
+      !strncmp(message, "GETS", strlen("GETS"))
+      ) {
+    printf("got gets\n");
+
+    // get results from DB
+
+    char* buffer = "ACK:127.0.0.1:11111:0"; //FIXME
+
+    return buffer;
+  }
+  // SUCC
   else {
     return "NACK";
   }
 }
 
+int init_server_table(char* server, int port) {
+  int res;
+  int connection;
+  
+  // open a connection to our given server
+  printf("connecting to %s:%d\n", server, port);
+  res = make_connection_with(server, port, &connection);
+  if (res<0) return res;
+
+  send_message(connection, "GETS");
+  send_message(connection, "STOP");
+  close(connection);
+}
+
 int main(int argc, char** argv) {
-  if (argc > 2) {
+  if (argc > 4) {
     fprintf(stderr,"server: too many arguments.\n");
-    fprintf(stderr,"usage: server [port]\n");
+    fprintf(stderr,"usage: server <localport> <server> <port> \n");
     fprintf(stderr,"\tStarts an object storage server on port, or 11111 if no port is given.\n");
     exit(-1);
   }
 
-  int port;
-  if (argc>1) {
-    port = atoi(argv[1]);
-  } else {
-    port = 11111;
-  }
-  
+  int port = atoi(argv[1]);
   int result;
   int listener;
   int connection;
@@ -127,6 +150,14 @@ int main(int argc, char** argv) {
   if (result < 0) {
     printf("failed to set up listener (%s)\n", strerror(errno));
     return result;
+  }
+  
+  // bring us up on the network
+  char* server = argv[2];
+  int sport = atoi(argv[3]);
+  if (init_server_table(server, sport)) {
+    printf("failed to init server table (%s)\n", strerror(errno));
+    return -1;
   }
 
   while (1) {
@@ -144,16 +175,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
-//  char str[256];
-//
-//  int i = 0;
-//  while (1) {
-//    gets(str);
-//
-//    obj_t* obj = Obj(i, str);
-//    add(obj);
-//
-//    i++;
-//  }
-
