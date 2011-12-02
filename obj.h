@@ -1,19 +1,28 @@
+#ifndef OBJ_H
+#define OBJ_H
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
-typedef enum _obj_type_t {
-  DATA,
-  JOB
-} obj_type_t;
+#define MAX_NAME_SIZE 256
+#define MAX_META_SIZE 512
 
-// An object is identified by its name and a random identifier.
-// TODO: add data carrying
+typedef uint8_t byte_t;
+typedef unsigned long hash_t;
+
+/* An object is identified by its name and a random identifier. */
 typedef struct _obj_t {
-  obj_type_t* type;
-  char* name;
-  int salt;
+    int salt;
+    char *name;
+    hash_t hash;
+    byte_t *bytes;
+    size_t size; /* length of byte array since it is not null-terminated. */
+    char *metadata; /* job or file, output filename, completed, etc. */
 } obj_t;
 
 obj_t* Obj(int salt, char* name);
 char* tostr(obj_t* obj);
+
+#endif

@@ -1,13 +1,20 @@
+CC = gcc
+CFLAGS = -ggdb -c -Wall -Wextra -std=gnu99
+LFLAGS = -lsqlite3
+
 all: server
 
+sql.o: sql.c sql.h obj.h
+	$(CC) $(CFLAGS) -o sql.o sql.c 
+
 obj.o: obj.c obj.h
-	gcc -ggdb -c -o obj.o obj.c
+	$(CC) $(CFLAGS) -o obj.o obj.c
 
 network.o: network.c network.h
-	gcc -ggdb -c -o network.o network.c
+	$(CC) $(CFLAGS) -o network.o network.c
 
-server: server.c server.h network.o obj.o
-	gcc -ggdb -o server server.c network.o obj.o
+server: server.c server.h network.o obj.o sql.o
+	$(CC) $(LFLAGS) -o server server.c network.o obj.o sql.o
 
 clean:
-	rm server obj.o network.o
+	-rm server obj.o network.o sql.o
