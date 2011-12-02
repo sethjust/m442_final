@@ -7,10 +7,6 @@
 #include "obj.h"
 #include "sql.h"
 
-typedef struct _server_t {
-  enum _type {LOCAL, REMOTE} type;
-} server_t; //TODO
-
 int is_local(server_t* server);
 server_t* next_server(hash_t n);
 int local_add(obj_t* obj);

@@ -5,7 +5,7 @@ LFLAGS = -lsqlite3
 all: server
 
 sql.o: sql.c sql.h obj.h
-	$(CC) $(CFLAGS) -o sql.o sql.c 
+	$(CC) $(CFLAGS) -o sql.o sql.c
 
 obj.o: obj.c obj.h
 	$(CC) $(CFLAGS) -o obj.o obj.c

@@ -24,6 +24,15 @@ typedef struct _obj_t {
     char *metadata; /* job or file, output filename, completed, etc. */
 } obj_t;
 
+typedef struct _server_t {
+    int salt;
+    char *address;
+    int port;
+    hash_t hash;
+    enum _type {LOCAL, REMOTE} type;
+} server_t; // TODO
+
+
 hash_t hash(obj_t* obj);
 obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata);
 char* tostr(obj_t* obj);
