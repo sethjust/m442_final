@@ -141,10 +141,16 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  int port = atoi(argv[1]);
+  int port;
   int result;
   int listener;
   int connection;
+
+  if (argc < 2) {
+    port = 11111;
+  } else {
+    port = atoi(argv[1]);
+  }
 
   result = set_up_listener(port, &listener);
   if (result < 0) {
@@ -152,12 +158,14 @@ int main(int argc, char** argv) {
     return result;
   }
   
-  // bring us up on the network
-  char* server = argv[2];
-  int sport = atoi(argv[3]);
-  if (init_server_table(server, sport)) {
-    printf("failed to init server table (%s)\n", strerror(errno));
-    return -1;
+  if (argc > 1) {
+    // bring us up on the network
+    char* server = argv[2];
+    int sport = atoi(argv[3]);
+    if (init_server_table(server, sport)) {
+      printf("failed to init server table (%s)\n", strerror(errno));
+      return -1;
+    }
   }
 
   while (1) {
