@@ -82,6 +82,24 @@ int wait_for_connection(int listen_socket, int *connection) {
   return 0;
 }
 
+ssize_t send_string(int socket, char *buffer) {
+  // from Jim Fix
+  ssize_t nwritten;
+  int pos = 0;
+  int len = strlen(buffer)+1;
+  while (pos < len) {
+    if ((nwritten = write(socket, &(buffer[pos]), len-pos)) <= 0) {
+      if (errno == EINTR) {
+        nwritten = 0;
+      } else {
+        return -1;
+      }
+    }
+    pos += nwritten;
+  }
+  return pos;
+}
+
 ssize_t recv_string(int socket, char *buffer, size_t maxlen) {
   // from Jim Fix
   ssize_t rc;
@@ -103,24 +121,6 @@ ssize_t recv_string(int socket, char *buffer, size_t maxlen) {
   return pos;
 }
 
-ssize_t send_string(int socket, char *buffer) {
-  // from Jim Fix
-  ssize_t nwritten;
-  int pos = 0;
-  int len = strlen(buffer)+1;
-  while (pos < len) {
-    if ((nwritten = write(socket, &(buffer[pos]), len-pos)) <= 0) {
-      if (errno == EINTR) {
-        nwritten = 0;
-      } else {
-        return -1;
-      }
-    }
-    pos += nwritten;
-  }
-  return pos;
-}
-
 int send_message(int socket, char* message) {
   int result;
   char* buffer = (char*)malloc((6+strlen(message)+1)*sizeof(char));
@@ -129,6 +129,43 @@ int send_message(int socket, char* message) {
   result = send_string(socket,buffer);
   if (!(result == strlen(message))) return -1;
   else return 0;
+}
+
+int recv_message(int socket, char** buffer) {
+  char size[6]; // we allow 4 hex bytes for size; this allows messages to be at
+                // most 65536 bytes in length
+  int res, length, sum;
+
+  res = recv_string(socket,size,5);
+  if (res!=6) {
+    printf("only recv'd %d hex digits\n", res);
+    return -1;
+  }
+
+  res = htoi(size, &sum); // parse the hex digits
+  if (!(res==6)) {
+    printf("only parsed %d hex digits\n", res);
+    return -1;
+  }
+
+  // now, noting that a hex digit is 4 bits, we can use bit ops instead of
+  // string ones:
+  length = sum >> 8; // drop the two characters off the right hand side
+  sum = sum - (length << 8); // leave only the last two in sum
+
+  *buffer = (char*) malloc(length*sizeof(char));
+
+  res = recv_string(socket, *buffer, length);
+  if (!(length == res)) {
+    printf("message had length %d, but said it was %d\n", res, length);
+    return -1;
+  }
+  if (!((res = csum(*buffer)) == sum)) {
+    printf("\"%s\" had checksum %x, but said it was %x\n", *buffer, res, sum);
+    return -1;
+  }
+
+  return length;
 }
 
 int htoi (const char *ptr, int *result) {
@@ -165,47 +202,18 @@ int csum(const char* msg) {
 
 void conn_listen(int socket, char* process(char*)) {
   char* buffer;
-  char size[6]; // we allow 4 hex bytes for size; this allows messages to be at
-                // most 65536 bytes in length
-  int res, length, sum;
+  int res;
   // repeatedly respond to lines sent by the client
   do {
     // receive a string from this client's connection socket
-    res = recv_string(socket,size,5);
-    if (res!=6) {
-      printf("only recv'd %d hex digits\n", res);
+    res = recv_message(socket, &buffer);
+    if (res < 0) {
       send_string(socket, "NACK");
-      continue;
-    }
-
-    res = htoi(size, &sum); // parse the hex digits
-    if (!(res==6)) {
-      printf("only parsed %d hex digits\n", res);
-      send_message(socket, "NACK");
-      continue;
-    }
-
-    // now, noting that a hex digit is 4 bits, we can use bit ops instead of
-    // string ones:
-    length = sum >> 8; // drop the two characters off the right hand side
-    sum = sum - (length << 8); // leave only the last two in sum
-
-    buffer = (char*) malloc(length*sizeof(char));
-
-    res = recv_string(socket, buffer, length);
-    if (!(length == res)) {
-      printf("message had length %d, but said it was %d\n", res, length);
-      send_message(socket, "NACK");
-      continue;
-    }
-    if (!((res = csum(buffer)) == sum)) {
-      printf("\"%s\" had checksum %x, but said it was %x\n", buffer, res, sum);
-      send_message(socket, "NACK");
       continue;
     }
 
     printf("Client says \"%s\".\n",buffer);
 
     send_message(socket, process(buffer)); // Note that process() may have side effects.
-  } while (length > 0 && strcmp(buffer,"STOP")); 
+  } while (res > 0 && strcmp(buffer,"STOP")); 
 }

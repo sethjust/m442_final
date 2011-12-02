@@ -137,6 +137,7 @@ char* process_msg(char* message) {
 }
 
 int init_server_table(char* server, int port) {
+  char* buffer;
   int res;
   int connection;
   
@@ -146,7 +147,13 @@ int init_server_table(char* server, int port) {
   if (res<0) return res;
 
   send_message(connection, "GETS");
+  recv_message(connection, &buffer);
+  printf("%s\n", buffer);
+
   send_message(connection, "STOP");
+  recv_message(connection, &buffer);
+  printf("%s\n", buffer);
+
   close(connection);
 }
 
