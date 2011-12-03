@@ -16,7 +16,13 @@ typedef struct _obj_t {
     char *name;
     hash_t hash;
     char *bytes;
-    char *metadata; /* job or file, output filename, completed, etc. */
+    char *metadata; /* job or file, output filename, completed, etc.
+      Format is:
+        For a file: "FILE\0"
+        For a job: "JOB:outfilehash:complete\0"
+          where complete is one of '0' or '1'
+      
+      */
 } obj_t;
 
 typedef struct _node_t {

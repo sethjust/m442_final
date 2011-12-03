@@ -76,19 +76,18 @@ char* process_msg(char* message) {
       ) { 
 
     char *name;
+    char *bytes;
 
     name = strtok(&(message[strlen("ADD")]), ":");
+    bytes = strtok(NULL, ":");
 
-    if (name == NULL) return "NACK";
+    if (bytes == NULL) return "NACK";
 
-//    obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata) {
-    char *bytes = malloc(sizeof(*bytes));
-    bytes[0]=0;
-    obj_t* obj = Obj(salt_counter++, name, bytes, ""); // use & increment the salt //TODO: parse the full message
+    obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
 
     if (add(obj)) return "NACK";
 
-    char* buffer = (char*) malloc(20*sizeof(char));
+    char* buffer = (char*) malloc(16*sizeof(char));
     sprintf(buffer, "ACK:%08X", obj->hash);
     if (file_hash_exists(obj->hash)) {
         printf("%s\n", tostr(local_get_object(obj->hash)));
