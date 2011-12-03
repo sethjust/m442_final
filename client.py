@@ -14,13 +14,16 @@ class ComputeCloud:
     self.socket.connect((self.host, self.port))
 
   def close(self):
-    if (send_msg(self.socket, "STOP") != "ACK"):
+    if (self.send_msg("STOP") != "ACK"):
       raise ComputeCloud.ServerError
-
     self.socket.close()
 
   def send_msg(self, msg):
-    return send_msg(self.socket, msg)
+    if len("%x"%(len(msg)))>4:
+      raise ComputeCloud.MsgTooLongError
+    header = "%04X%02X"%(len(msg),csum(msg))
+    self.socket.send(header+msg+"\0")
+    return recv(self.socket) #TODO: error handling
 
   #TODO: reuse connections if needed
   def call(self, msg):
@@ -40,6 +43,8 @@ class ComputeCloud:
     return self.add_string(name, f.read())
 
   class ServerError (Exception):
+    pass
+  class RecvError (Exception):
     pass
 
   class FileObject:
@@ -69,8 +74,6 @@ class ComputeCloud:
     class ParseError (Exception):
       pass
 
-class RecvError (Exception):
-  pass
 def recv(s):
   d = ""
   while (1):
@@ -83,19 +86,12 @@ def recv(s):
   s = int(d[4:6], 16)
 
   if ( length != len(d[6:]) or s != csum(d[6:]) ):
-    raise RecvError
+    raise ComputeCloud.RecvError
 
   return d[6:]
 
 def csum(msg):
  return reduce(lambda x,y: (x+y)%256, [ord(msg[i]) for i in range(0,len(msg))])
-
-def send_msg(dest, msg):
-  if len("%x"%(len(msg)))>4:
-    return "NACK:msg too long"
-  header = "%04X%02X"%(len(msg),csum(msg))
-  dest.send(header+msg+"\0")
-  return recv(dest) #TODO: error handling
 
 def rname(len=8):
   return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
