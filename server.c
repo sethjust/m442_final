@@ -67,9 +67,9 @@ char* process_msg(char* message) {
     salt = strtok(NULL, ":");
 
     if ( salt == NULL ) return "NACK";  // if we get three tokens, we're
-                                      //(naïvely) good //FIXME
+                                      //(naïvely) good
 
-    printf("adding %s:%d:%s\n", host, atoi(port), salt); //FIXME: placeholder for call
+    printf("adding %s:%d:%s\n", host, atoi(port), salt); //TODO: placeholder for call to db
 
     return "ACK";
   }
@@ -87,7 +87,7 @@ char* process_msg(char* message) {
 //    obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata) {
     byte_t* bytes = (byte_t*) malloc(sizeof(byte_t));
     bytes[0]=0;
-    obj_t* obj = Obj(salt_counter++, name, bytes, 1, ""); // use & increment the salt
+    obj_t* obj = Obj(salt_counter++, name, bytes, 1, ""); // use & increment the salt //TODO: parse the full message
 
     if (add(obj)) return "NACK";
 
@@ -103,9 +103,9 @@ char* process_msg(char* message) {
 
     return buffer;
   }
-  // BADD
-  // JADD
-  // GET
+  //TODO: BADD
+  //TODO: JADD
+  //TODO: GET
   else if (
       !strncmp(message, "GETS", strlen("GETS"))
       ) {
@@ -113,9 +113,9 @@ char* process_msg(char* message) {
 
     //TODO: get results from DB
 
-    return "ACK:127.0.0.1:11111:0"; //FIXME
+    return "ACK:127.0.0.1:11111:0";
   }
-  // SUCC
+  //TODO: SUCC
   else {
     return "NACK";
   }
@@ -145,8 +145,8 @@ int init_server_table(char* server, int port) {
 int main(int argc, char** argv) {
   if (argc > 4) {
     fprintf(stderr,"server: too many arguments.\n");
-    fprintf(stderr,"usage: server <localport> <server> <port> \n");
-    fprintf(stderr,"\tStarts an object storage server on port, or 11111 if no port is given.\n");
+    fprintf(stderr,"usage: server [localport] [server port] \n");
+    fprintf(stderr,"\tStarts an object storage server on port, or 11111 if no port is given.\nContacts a given remote server to join a storage network.");
     exit(-1);
   }
 
