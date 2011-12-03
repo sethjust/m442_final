@@ -5,16 +5,16 @@
 sqlite3 *db_file;
 sqlite3 *db_node;
 
-int is_local(server_t* server) {
-  return (server->type == LOCAL);
+int is_local(node_t* node) {
+  return (node->type == LOCAL);
 }
 
-server_t* next_server(hash_t n) { //FIXME
+node_t* next_node(hash_t n) { //FIXME
 //  "SELECT * from servers WHERE hash > n ORDER BY hash LIMIT 1
-  server_t loc;
+  node_t loc;
   loc.type = LOCAL;
 
-  server_t rem;
+  node_t rem;
   rem.type = REMOTE;
 
   if (n < (MODULUS/2)) {
@@ -29,7 +29,7 @@ int local_add(obj_t* obj) {
   return local_add_object(obj);
 }
 
-int remote_add(server_t* server, obj_t* obj) { //FIXME
+int remote_add(node_t* node, obj_t* obj) { //FIXME
   printf("adding %s to remote server\n", tostr(obj));
   return 0;
 }
@@ -37,12 +37,12 @@ int remote_add(server_t* server, obj_t* obj) { //FIXME
 int add(obj_t* obj) {
   hash_t n = hash(obj);
 
-  server_t* server = next_server(n);
+  node_t* node = next_node(n);
 
-  if (is_local(server)) {
+  if (is_local(node)) {
     return local_add(obj);
   } else {
-    return remote_add(server, obj);
+    return remote_add(node, obj);
   }
 }
 
@@ -85,9 +85,9 @@ char* process_msg(char* message) {
     if (name == NULL) return "NACK";
 
 //    obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata) {
-    byte_t* bytes = (byte_t*) malloc(sizeof(byte_t));
+    char *bytes = malloc(sizeof(*bytes));
     bytes[0]=0;
-    obj_t* obj = Obj(salt_counter++, name, bytes, 1, ""); // use & increment the salt //TODO: parse the full message
+    obj_t* obj = Obj(salt_counter++, name, bytes, ""); // use & increment the salt //TODO: parse the full message
 
     if (add(obj)) return "NACK";
 

@@ -20,7 +20,7 @@ int local_remove_object(hash_t hash);
 
 /* SQL node functions */
 bool node_hash_exists(hash_t hash);
-int local_add_node(server_t *server);
+int local_add_node(node_t *node);
 int local_remove_node(hash_t hash);
 
 #endif

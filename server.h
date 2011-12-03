@@ -7,9 +7,9 @@
 #include "obj.h"
 #include "sql.h"
 
-int is_local(server_t* server);
-server_t* next_server(hash_t n);
+int is_local(node_t* node);
+node_t* next_node(hash_t n);
 int local_add(obj_t* obj);
-int remote_add(server_t* server, obj_t* obj);
+int remote_add(node_t* node, obj_t* obj);
 int add(obj_t* obj);
 int init_server_table(char* server, int port);

@@ -15,7 +15,7 @@ length (in bytes, not including the null terminator) of the message to follow
 (allowing messages up to 65536 bytes), while the final two are the sum of all
 the bytes in the message (modulo 16^2).  All clients should send the message
 "STOP" before closing the socket. (This is technically unneccessary, as a
-zero-length message results from the socket closing, but is considered polite). 
+zero-length message results from the socket closing, but is considered polite).
 
 The following commands are processed by storage nodes:
   SADD:host:port:salt -> ACK -- add a server record
@@ -31,7 +31,7 @@ A word on data representation:
   ports are decimal integers of variable width
   salts are 8-character (0 padded) hexadecimal integers
   names are strings
-  bytes are encoded in an as-yet-undecided manner
+  bytes are strings (Base64 encodings of binary files)
   filenames are names
 Servers will make a best-faith effort to interpret these in a reasonable (i.e.
 human-intuitive) manner.

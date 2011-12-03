@@ -14,21 +14,17 @@ hash_t hash(obj_t* obj) {
   return result % MODULUS;
 }
 
-obj_t* Obj(int salt, char* name, byte_t* bytes, size_t size, char* metadata) {
+obj_t* Obj(int salt, char* name, char* bytes, char* metadata) {
   // Pseudo-constructor for objects.
   // Note that inputs are copied to malloced memory, so the input buffers may be reused
 
   obj_t* obj = (obj_t*) malloc(sizeof(obj_t));
 
   obj->salt = salt;
-  obj->size = size;
 
-  obj->name = (char*) malloc(strlen(name) * sizeof(char));
-  strcpy(obj->name, name);
-  obj->metadata = (char*) malloc(strlen(metadata) * sizeof(char));
-  strcpy(obj->metadata, metadata);
-  obj->bytes = (byte_t*) malloc(obj->size * sizeof(byte_t));
-  memcpy((void*) obj->bytes, bytes, obj->size);
+  obj->name = strdup(name);
+  obj->metadata = strdup(metadata);
+  obj->bytes = strdup(bytes);
 
   obj->hash = hash(obj);
 
