@@ -138,8 +138,21 @@ int init_server_table(char* server, int port) {
 
   close(connection);
 }
+ 
+int listener, connection;//This will need to change for threading
+// Handle Ctrl-C to close sockets
+void  INThandler(int sig)
+{
+  signal(sig, SIG_IGN); // Ignore Ctrl-C for the moment
+  close(connection);
+  close(listener);
+
+  exit(0);
+}
 
 int main(int argc, char** argv) {
+  signal(SIGINT, INThandler); // register a signal handler for Ctrl-C
+
   if (argc > 4) {
     fprintf(stderr,"server: too many arguments.\n");
     fprintf(stderr,"usage: server [localport] [server port] \n");
@@ -149,8 +162,6 @@ int main(int argc, char** argv) {
 
   int port;
   int result;
-  int listener;
-  int connection;
 
   if (argc < 2) {
     port = 11111;
