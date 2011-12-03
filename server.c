@@ -11,17 +11,14 @@ int is_local(node_t* node) {
 
 node_t* next_node(hash_t n) { //FIXME
 //  "SELECT * from servers WHERE hash > n ORDER BY hash LIMIT 1
-  node_t loc;
-  loc.type = LOCAL;
-
-  node_t rem;
-  rem.type = REMOTE;
+  node_t* node = (node_t*) malloc(sizeof(node_t));
 
   if (n < (MODULUS/2)) {
-    return &loc;
+    node->type = LOCAL;
   } else {
-    return &rem;
+    node->type = REMOTE;
   }
+  return node;
 }
 
 int local_add(obj_t* obj) {

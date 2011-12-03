@@ -8,14 +8,25 @@ class ComputeCloud:
   def __init__(self, host, port):
     self.host = host
     self.port = port
-    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-  def call(self, msg):
+  def open(self):
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.socket.connect((self.host, self.port))
-    res = send_msg(self.socket, msg)
-    if (send_msg(self.socket, "STOP") != "ACK"): #TODO: reuse connections if needed
+
+  def close(self):
+    if (send_msg(self.socket, "STOP") != "ACK"):
       raise ComputeCloud.ServerError
+
     self.socket.close()
+
+  def send_msg(self, msg):
+    return send_msg(self.socket, msg)
+
+  #TODO: reuse connections if needed
+  def call(self, msg):
+    self.open()
+    res = self.send_msg(msg)
+    self.close()
     return res
 
   def add_string(self, name, string):
@@ -24,10 +35,9 @@ class ComputeCloud:
       return ComputeCloud.FileObject(self, res[4:])
     else: return None
 
-  def add_text_file(self, name, path):
-    f = open(path, 'r')
-    ls = f.readlines()
-    return self.add_string(name, ''.join(ls))
+  def add_file(self, name, path):
+    f = open(path, 'r') #TODO: catch errors
+    return self.add_string(name, f.read())
 
   class ServerError (Exception):
     pass
@@ -98,17 +108,3 @@ if __name__ == '__main__':
   f = s.add_string("name", "this is a test")
   print f
   print f.get()
-
-
-#  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#  s.connect((HOST, PORT));
-#
-#  for i in range(3,17):
-#  print send_msg(s, "ADD:"+rname(2**i-4))
-#    print send_msg(s, "ADD:"+rname(10))
-#
-#print send_msg(s, "SADD:127.0.0.1:11112:0")
-#print send_msg(s, "GETS")
-#
-#  print send_msg(s, "STOP")
-#  s.close()
