@@ -87,8 +87,8 @@ char* process_msg(char* message) {
 
     if (add(obj)) return "NACK";
 
-    char* buffer = (char*) malloc(16*sizeof(char));
-    sprintf(buffer, "ACK:%08X", obj->hash);
+    char* buffer = (char*) malloc((22)*sizeof(char));
+    sprintf(buffer, "ACK:%s", tostr(obj));
     if (file_hash_exists(obj->hash)) {
         printf("%s\n", tostr(local_get_object(obj->hash)));
     } else {
@@ -101,7 +101,35 @@ char* process_msg(char* message) {
   }
   //TODO: BADD
   //TODO: JADD
-  //TODO: GET
+  else if (
+      !strncmp(message, "GET", strlen("GET"))
+      && message[strlen("GET")] == ':'
+      ) { 
+
+    char *name,*salt,*buffer;
+    int n;
+    obj_t *obj;
+
+    name = strtok(&(message[strlen("GET")]), ":");
+    salt = strtok(NULL, ":");
+
+    if (salt == NULL) {
+      printf("did not get salt\n");
+      return "NACK";
+    }
+    if (!(htoi(salt, &n)==8)) {
+      printf("did not parse entire salt\n");
+      return "NACK";
+    }
+    
+    obj = local_get_object(hash(Obj(n, name, "", "")));
+//obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
+  
+    buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
+    sprintf(buffer, "ACK:%s", obj->bytes);
+
+    return buffer;
+  }
   else if (
       !strncmp(message, "GETS", strlen("GETS"))
       ) {

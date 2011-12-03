@@ -35,7 +35,7 @@ class ComputeCloud:
   def add_string(self, name, string):
     res = self.call("ADD:"+name+":"+base64.b64encode(string))
     if res[:3] == "ACK":
-      return ComputeCloud.FileObject(self, res[4:])
+      return ComputeCloud.FileObject(self, name, res[4:])
     else: return None
 
   def add_file(self, name, path):
@@ -48,19 +48,21 @@ class ComputeCloud:
     pass
 
   class FileObject:
-    def __init__(self, cloud, key):
+    def __init__(self, cloud, name, key):
       self.cloud = cloud
+      self.name = name
 
-      if (self.invalid(key)):
-        print key
+      if (self.invalid(key[:8]) or self.invalid(key[9:])):
         raise ComputeCloud.FileObject.ParseError
-      self.key = key
+      self.salt = key[:8]
+      self.hash = key[9:]
 
     def __repr__(self):
-      return "<FileObject with hash "+self.key+">"
+      return "<FileObject with hash "+self.hash+">"
 
     def get(self):
-      res = self.cloud.call("GET:"+self.key)
+      res = self.cloud.call("GET:"+self.name+":"+self.salt)
+      print res
       if res[:3] == "ACK":
         return base64.b64decode(res[4:])
       else: return None
@@ -68,6 +70,7 @@ class ComputeCloud:
     def invalid(self, key):
       for char in key:
         if not char in string.hexdigits:
+          print key
           return True
       return False
 
@@ -78,6 +81,8 @@ def recv(s):
   d = ""
   while (1):
     c = s.recv(1)
+    if len(c) == 0:
+      return ''
     if ord(c) == 0:
       break;
     d = d+c

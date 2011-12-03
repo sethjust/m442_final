@@ -34,6 +34,6 @@ obj_t* Obj(int salt, char* name, char* bytes, char* metadata) {
 char* tostr(obj_t* obj){
   char* str = malloc((12+strlen(obj->name)) * sizeof(char));
       // the formatting should add at most 12 characters
-  sprintf(str, "{ %08X : %s }", obj->hash, obj->name);
+  sprintf(str, "%08X:%08X", obj->salt, obj->hash);
   return str;
 }

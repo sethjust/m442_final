@@ -19,20 +19,21 @@ zero-length message results from the socket closing, but is considered polite).
 
 The following commands are processed by storage nodes:
   SADD:host:port:salt -> ACK -- add a server record
-  ADD:name:bytes -> ACK:salt -- upload a file
+  ADD:name:bytes -> ACK:salt:hash -- upload a file
   BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
   JADD:name:sourcefile:outputname -> ACK:outputsalt -- add a job
-  GET:name:salt -> ACK:bytes -- get the contents of a file
+  GET:hash -> ACK:bytes -- get the contents of a file
   GETS -> ACK{:host:port:salt}* -- get a server table
   SUCC -> ACK -- notify a server that their successor has gone down
 
 A word on data representation:
   hostnames are strings; dotted quads or dns names
   ports are decimal integers of variable width
-  salts are 8-character (0 padded) hexadecimal integers
+  hashes are 8-character (0 padded) hexadecimal integers
+  salts are hashes
   names are strings
-  bytes are strings (Base64 encodings of binary files)
   filenames are names
+  bytes are strings (Base64 encodings of binary files)
 Servers will make a best-faith effort to interpret these in a reasonable (i.e.
 human-intuitive) manner.
 
