@@ -165,7 +165,7 @@ int init_server_table(char* server, int port) {
 
   close(connection);
 }
- 
+
 int listener, connection;//This will need to change for threading
 // Handle Ctrl-C to close sockets
 void  INThandler(int sig)

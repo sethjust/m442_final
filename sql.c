@@ -189,6 +189,28 @@ node_t *local_get_node(hash_t hash)
     return node;
 }
 
+hash_t next_node_hash(hash_t hash)
+{
+    sqlite3_stmt *p_stmn;
+    hash_t next_hash = 0;
+    int retv;
+
+    sqlite3_prepare_v2(db_node, "SELECT hash FROM nodes WHERE (hash > ?) ORDER BY hash ASC", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        next_hash = sqlite3_column_int64(p_stmn, 0);
+    } else if (retv == SQLITE_DONE) {
+        next_hash = hash;
+    } else {
+        node_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return next_hash;
+}
+
 static void make_node_table(void)
 {
     char *sql_create_nodes = "CREATE TABLE nodes (hash INTEGER PRIMARY KEY, address TEXT, port INTEGER, salt INTEGER, type INTEGER)";
