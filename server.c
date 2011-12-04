@@ -76,7 +76,7 @@ char* process_msg(char* message) {
 
         obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
 
-        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't be local. */
+        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
         char* buffer = (char*) malloc((22)*sizeof(char));
         sprintf(buffer, "ACK:%s", tostr(obj));
@@ -86,46 +86,46 @@ char* process_msg(char* message) {
             printf("could not find hash %08X\n", obj->hash);
         }
         return buffer;
-  }
-  //TODO: BADD
-  //TODO: JADD
-  else if (!strcmp(head, "GET")) {
-
-    char *name,*salt,*buffer;
-    int n;
-    obj_t *obj;
-
-    name = strtok_r(NULL, ":", &save_ptr);
-    salt = strtok_r(NULL, ":", &save_ptr);
-
-    if (salt == NULL) {
-      printf("did not get salt\n");
-      return "NACK";
     }
-    if (!(htoi(salt, &n)==8)) {
-      printf("did not parse entire salt\n");
-      return "NACK";
+    //TODO: BADD
+    //TODO: JADD
+    else if (!strcmp(head, "GET")) {
+
+        char *name, *salt, *buffer;
+        int n;
+        obj_t *obj;
+
+        name = strtok_r(NULL, ":", &save_ptr);
+        salt = strtok_r(NULL, ":", &save_ptr);
+
+        if (salt == NULL) {
+            printf("did not get salt\n");
+            return "NACK";
+        }
+        if (!(htoi(salt, &n)==8)) {
+            printf("did not parse entire salt\n");
+            return "NACK";
+        }
+
+        obj = local_get_object(hash(Obj(n, name, "", "")));
+        //obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
+
+        buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
+        sprintf(buffer, "ACK:%s", obj->bytes);
+
+        return buffer;
     }
-    
-    obj = local_get_object(hash(Obj(n, name, "", "")));
-//obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
-  
-    buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
-    sprintf(buffer, "ACK:%s", obj->bytes);
+    else if (!strcmp(head, "GETS")) {
+        printf("got gets\n");
 
-    return buffer;
-  }
-  else if (!strcmp(head, "GETS")) {
-    printf("got gets\n");
+        //TODO: get results from DB
 
-    //TODO: get results from DB
-
-    return "ACK:127.0.0.1:11111:0";
-  }
-  //TODO: SUCC
-  else {
-    return "NACK";
-  }
+        return "ACK:127.0.0.1:11111:0";
+    }
+    //TODO: SUCC
+    else {
+        return "NACK";
+    }
 }
 
 int init_server_table(char* server, int port) {
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     printf("failed to set up listener (%s)\n", strerror(errno));
     return result;
   }
-  
+
   if (argc > 2) {
     // bring us up on the network
     char* server = argv[2];

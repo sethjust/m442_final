@@ -37,3 +37,29 @@ char* tostr(obj_t* obj){
   sprintf(str, "%08X:%08X", obj->salt, obj->hash);
   return str;
 }
+
+hash_t hash_node(node_t *node) {
+    /* a variant of DJB2 */
+    hash_t result = 5381; // 0b1010100000101
+    char* i;
+
+    result += node->salt + node->port;
+    for (i = node->address; i++; ) {
+        if ((int) *i == 0) break;
+        result = result * 33 + ((int) *i);
+    }
+
+    return result % MODULUS;
+}
+
+node_t *Node(int salt, char *address, int port)
+{
+    node_t *node = malloc(sizeof(*node));
+
+    node->salt = salt;
+    node->port = port;
+    node->address = strdup(address);
+
+    node->hash = hash_node(node);
+    return node;
+}
