@@ -48,71 +48,55 @@ int salt_counter = 0;
 char* process_msg(char* message) {
 //  printf("got message %s\n", message);
 
-  if (
-      !strncmp(message, "STOP", strlen("STOP"))
-      ) { 
-    return "ACK";
-  }
-  else if (
-      !strncmp(message, "SADD", strlen("SADD"))
-      && message[strlen("SADD")] == ':'
-      ) {
+    char *save_ptr;
+    char *head = strtok_r(message, ":", &save_ptr);
 
-    char *host, *port, *salt;
-
-    host = strtok(&(message[strlen("ADDS")]), ":");
-    port = strtok(NULL, ":");
-    salt = strtok(NULL, ":");
-
-    if ( salt == NULL ) return "NACK";  // if we get three tokens, we're
-                                      //(naïvely) good
-
-    printf("adding %s:%d:%s\n", host, atoi(port), salt); //TODO: placeholder for call to db
-
-    return "ACK";
-  }
-  else if (
-      !strncmp(message, "ADD", strlen("ADD"))
-      && message[strlen("ADD")] == ':'
-      ) { 
-
-    char *name;
-    char *bytes;
-
-    name = strtok(&(message[strlen("ADD")]), ":");
-    bytes = strtok(NULL, ":");
-
-    if (bytes == NULL) return "NACK";
-
-    obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
-
-    if (add(obj)) return "NACK";
-
-    char* buffer = (char*) malloc((22)*sizeof(char));
-    sprintf(buffer, "ACK:%s", tostr(obj));
-    if (file_hash_exists(obj->hash)) {
-        printf("%s\n", tostr(local_get_object(obj->hash)));
-    } else {
-        printf("could not find hash %08X\n", obj->hash);
+    if (!strcmp(head, "STOP")) {
+        return "ACK";
     }
-//    bool file_hash_exists(hash_t hash);
-//    obj_t *local_get_object(hash_t hash)
+    else if (!strcmp(head, "SADD")) {
 
-    return buffer;
+        char *host = strtok_r(NULL, ":", &save_ptr);
+        char *port = strtok_r(NULL, ":", &save_ptr);
+        char *salt = strtok_r(NULL, ":", &save_ptr);
+
+        if ( salt == NULL ) return "NACK";  // if we get three tokens, we're
+                                            // (naïvely) good
+
+        printf("adding %s:%d:%s\n", host, atoi(port), salt); //TODO: placeholder for call to db
+
+        return "ACK";
+    }
+    else if (!strcmp(head, "ADD")) {
+
+        char *name = strtok_r(NULL, ":", &save_ptr);
+        char *bytes = strtok_r(NULL, ":", &save_ptr);
+
+        if (bytes == NULL) return "NACK";
+
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
+
+        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't be local. */
+
+        char* buffer = (char*) malloc((22)*sizeof(char));
+        sprintf(buffer, "ACK:%s", tostr(obj));
+        if (file_hash_exists(obj->hash)) {
+            printf("%s\n", tostr(local_get_object(obj->hash)));
+        } else {
+            printf("could not find hash %08X\n", obj->hash);
+        }
+        return buffer;
   }
   //TODO: BADD
   //TODO: JADD
-  else if (
-      !strncmp(message, "GET", strlen("GET"))
-      && message[strlen("GET")] == ':'
-      ) { 
+  else if (!strcmp(head, "GET")) {
 
     char *name,*salt,*buffer;
     int n;
     obj_t *obj;
 
-    name = strtok(&(message[strlen("GET")]), ":");
-    salt = strtok(NULL, ":");
+    name = strtok_r(NULL, ":", &save_ptr);
+    salt = strtok_r(NULL, ":", &save_ptr);
 
     if (salt == NULL) {
       printf("did not get salt\n");
@@ -131,9 +115,7 @@ char* process_msg(char* message) {
 
     return buffer;
   }
-  else if (
-      !strncmp(message, "GETS", strlen("GETS"))
-      ) {
+  else if (!strcmp(head, "GETS")) {
     printf("got gets\n");
 
     //TODO: get results from DB
