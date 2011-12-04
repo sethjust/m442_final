@@ -9,16 +9,16 @@ int is_local(node_t* node) {
   return (node->type == LOCAL);
 }
 
-node_t* next_node(hash_t n) { //FIXME
-//  "SELECT * from servers WHERE hash > n ORDER BY hash LIMIT 1
-  node_t* node = (node_t*) malloc(sizeof(node_t));
+node_t* next_node(hash_t n) {
+    node_t *node;
+    hash_t next_hash = next_node_hash(n);
 
-  if (n < (MODULUS/2)) {
-    node->type = LOCAL;
-  } else {
-    node->type = REMOTE;
-  }
-  return node;
+    if (next_hash == n) {
+        node = local_get_node(next_node_hash(0));
+    } else {
+        node = local_get_node(next_hash);
+    }
+    return node;
 }
 
 int local_add(obj_t* obj) {
@@ -44,6 +44,7 @@ int add(obj_t* obj) {
 }
 
 int salt_counter = 0;
+
 char* process_msg(char* message) {
 //  printf("got message %s\n", message);
 

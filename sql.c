@@ -192,7 +192,7 @@ node_t *local_get_node(hash_t hash)
 hash_t next_node_hash(hash_t hash)
 {
     sqlite3_stmt *p_stmn;
-    hash_t next_hash = 0;
+    hash_t next_hash;
     int retv;
 
     sqlite3_prepare_v2(db_node, "SELECT hash FROM nodes WHERE (hash > ?) ORDER BY hash ASC", -1, &p_stmn, NULL);
