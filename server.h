@@ -7,6 +7,8 @@
 #include "obj.h"
 #include "sql.h"
 
+#include <signal.h>
+
 int is_local(node_t* node);
 node_t* next_node(hash_t n);
 int local_add(obj_t* obj);
