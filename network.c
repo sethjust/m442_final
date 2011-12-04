@@ -191,7 +191,7 @@ int htoi (const char *ptr, int *result) {
 }
 
 int csum(const char* msg) {
-  int res;
+  int res = 0;
   const char* i = msg;
   for (;;) {
     if (*i==0) return res;

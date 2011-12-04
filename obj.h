@@ -35,9 +35,11 @@ typedef struct _node_t {
 
 hash_t hash(obj_t* obj);
 obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
+void free_obj(obj_t *obj);
 char *tostr(obj_t* obj);
 
-hash_t hash_node(node_t* node);
+hash_t hash_node(node_t *node);
 node_t *Node(int salt, char *address, int port);
+void free_node(node_t *node);
 
 #endif

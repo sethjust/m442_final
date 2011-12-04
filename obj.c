@@ -1,6 +1,7 @@
 #include "obj.h"
 
-hash_t hash(obj_t* obj) {
+hash_t hash(obj_t* obj)
+{
   // adapted from https://www.cse.yorku.ca/~oz/hash.html
   hash_t result = 5381; // 0b1010100000101
   char* i;
@@ -14,7 +15,8 @@ hash_t hash(obj_t* obj) {
   return result % MODULUS;
 }
 
-obj_t* Obj(int salt, char* name, char* bytes, char* metadata) {
+obj_t* Obj(int salt, char* name, char* bytes, char* metadata)
+{
   // Pseudo-constructor for objects.
   // Note that inputs are copied to malloced memory, so the input buffers may be reused
 
@@ -31,14 +33,26 @@ obj_t* Obj(int salt, char* name, char* bytes, char* metadata) {
   return obj;
 }
 
-char* tostr(obj_t* obj){
+void free_obj(obj_t *obj)
+{
+    free(obj->name);
+    free(obj->metadata);
+    if (obj->bytes != NULL) {
+        free(obj->bytes);
+    }
+    free(obj);
+}
+
+char* tostr(obj_t* obj)
+{
   char* str = malloc((12+strlen(obj->name)) * sizeof(char));
       // the formatting should add at most 12 characters
   sprintf(str, "%08X:%08X", obj->salt, obj->hash);
   return str;
 }
 
-hash_t hash_node(node_t *node) {
+hash_t hash_node(node_t *node)
+{
     /* a variant of DJB2 */
     hash_t result = 5381; // 0b1010100000101
     char* i;
@@ -62,4 +76,10 @@ node_t *Node(int salt, char *address, int port)
 
     node->hash = hash_node(node);
     return node;
+}
+
+void free_node(node_t *node)
+{
+    free(node->address);
+    free(node);
 }
