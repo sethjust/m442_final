@@ -62,7 +62,6 @@ class ComputeCloud:
 
     def get(self):
       res = self.cloud.call("GET:"+self.name+":"+self.salt)
-      print res
       if res[:3] == "ACK":
         return base64.b64decode(res[4:])
       else: return None
@@ -106,6 +105,6 @@ if __name__ == '__main__':
   PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
 
   s = ComputeCloud(HOST, PORT)
-  f = s.add_string("name", "this is a test")
+  f = s.add_string(rname(), "this is a test")
   print f
   print f.get()
