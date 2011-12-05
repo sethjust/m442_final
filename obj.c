@@ -12,7 +12,7 @@ hash_t hash(obj_t* obj)
     result = result * 33 + ((int) *i);
   }
 
-  return result % MODULUS;
+  return result;
 }
 
 obj_t* Obj(int salt, char* name, char* bytes, char* metadata)
@@ -63,7 +63,7 @@ hash_t hash_node(node_t *node)
         result = result * 33 + ((int) *i);
     }
 
-    return result % MODULUS;
+    return result;
 }
 
 node_t *Node(int salt, char *address, int port)
