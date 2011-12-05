@@ -83,3 +83,53 @@ void free_node(node_t *node)
     free(node->address);
     free(node);
 }
+
+bool is_empty(queue_t *queue)
+{
+    return (queue->next == NULL);
+}
+
+queue_t *new_queue(void)
+{
+    queue_t *queue = malloc(sizeof(*queue));
+    queue->next = NULL;
+    queue->last = NULL;
+
+    return queue;
+}
+
+node_t *pop_queue(queue_t *queue)
+{
+    queue_node_t *popped;
+
+    if (is_empty(queue)) {
+        return NULL;
+    } else {
+        popped = queue->next;
+        queue->next = popped->next;
+        if (queue->last == popped) {
+            queue->last = NULL;
+        }
+    }
+    node_t *node = popped->node;
+    free(popped);
+    return node;
+}
+
+void push_queue(queue_t *queue, node_t *node)
+{
+    node_t *node_dup = Node(node->salt, node->address, node->port);
+    node_dup->type = node->type;
+
+    queue_node_t *queue_node = malloc(sizeof(*queue_node));
+    queue_node->node = node_dup;
+    queue_node->next = NULL;
+
+    if (is_empty(queue)) {
+        queue->next = queue_node;
+        queue->last = queue_node;
+    } else {
+        (queue->last)->next = queue_node;
+        queue->last = queue_node;
+    }
+}
