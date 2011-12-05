@@ -98,7 +98,7 @@ def csum(msg):
  return reduce(lambda x,y: (x+y)%256, [ord(msg[i]) for i in range(0,len(msg))])
 
 def rname(len=8):
-  return ''.join(random.choice(string.ascii_lowercase) for x in range(len))
+  return ''.join(random.choice(string.ascii_lowercase+string.ascii_uppercase) for x in range(len))
 
 if __name__ == '__main__':
   HOST = "localhost"
