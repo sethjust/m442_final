@@ -1,3 +1,6 @@
+#ifndef SERVER_H
+#define SERVER_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,3 +18,6 @@ int local_add(obj_t* obj);
 int remote_add(node_t* node, obj_t* obj);
 int add(obj_t* obj);
 int init_server_table(char* server, int port);
+char* process_msg(char *message);
+
+#endif

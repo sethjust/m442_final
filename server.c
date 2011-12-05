@@ -213,7 +213,7 @@ int main(int argc, char** argv) {
       return result;
     }
 
-    conn_listen(connection, process_msg);
+    conn_listen(connection);
 
     close(connection);
   }

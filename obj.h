@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef unsigned int hash_t;
 
@@ -36,8 +37,8 @@ typedef struct _queue_node_t {
 } queue_node_t;
 
 typedef struct _queue_t {
-    queue_node_t *head;
-    queue_node_t *tail;
+    queue_node_t *next;
+    queue_node_t *last;
 } queue_t;
 
 hash_t hash(obj_t* obj);
@@ -48,5 +49,10 @@ char *tostr(obj_t* obj);
 hash_t hash_node(node_t *node);
 node_t *Node(int salt, char *address, int port);
 void free_node(node_t *node);
+
+bool is_empty(queue_t *queue);
+queue_t *new_queue(void);
+node_t *pop_queue(queue_t *queue);
+void push_queue(queue_t *queue, node_t *node);
 
 #endif

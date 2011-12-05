@@ -1,10 +1,16 @@
-#include <sys/socket.h>
-#include <netdb.h>
-#include <errno.h>
+#ifndef NETWORK_H
+#define NETWORK_H
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <errno.h>
 #include <unistd.h>
+
+#include "server.h"
 
 #define TCP_PROTOCOL 6
 
@@ -18,4 +24,6 @@ int send_message(int socket, char* message);
 int recv_message(int socket, char** buffer);
 int htoi (const char *ptr, int *result);
 int csum(const char* msg);
-void conn_listen(int socket, char* process(char*));
+void conn_listen(int socket);
+
+#endif
