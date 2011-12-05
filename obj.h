@@ -41,12 +41,12 @@ typedef struct _queue_t {
     queue_node_t *last;
 } queue_t;
 
-hash_t hash(obj_t* obj);
+hash_t hash(char *text, int salt);
+
 obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
 void free_obj(obj_t *obj);
 char *tostr(obj_t* obj);
 
-hash_t hash_node(node_t *node);
 node_t *Node(int salt, char *address, int port);
 void free_node(node_t *node);
 

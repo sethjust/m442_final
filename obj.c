@@ -1,13 +1,13 @@
 #include "obj.h"
 
-hash_t hash(obj_t* obj)
+hash_t hash(char *text, int salt)
 {
   // adapted from https://www.cse.yorku.ca/~oz/hash.html
   hash_t result = 5381; // 0b1010100000101
   char* i;
 
-  result += obj->salt;
-  for (i=obj->name; i++; ) {
+  result += salt;
+  for (i = text; i++; ) {
     if ((int) *i == 0) break;
     result = result * 33 + ((int) *i);
   }
@@ -28,7 +28,7 @@ obj_t* Obj(int salt, char* name, char* bytes, char* metadata)
   obj->metadata = strdup(metadata);
   obj->bytes = strdup(bytes);
 
-  obj->hash = hash(obj);
+  obj->hash = hash(obj->name, obj->salt);
 
   return obj;
 }
@@ -51,21 +51,6 @@ char* tostr(obj_t* obj)
   return str;
 }
 
-hash_t hash_node(node_t *node)
-{
-    /* a variant of DJB2 */
-    hash_t result = 5381; // 0b1010100000101
-    char* i;
-
-    result += node->salt + node->port;
-    for (i = node->address; i++; ) {
-        if ((int) *i == 0) break;
-        result = result * 33 + ((int) *i);
-    }
-
-    return result;
-}
-
 node_t *Node(int salt, char *address, int port)
 {
     node_t *node = malloc(sizeof(*node));
@@ -74,7 +59,7 @@ node_t *Node(int salt, char *address, int port)
     node->port = port;
     node->address = strdup(address);
 
-    node->hash = hash_node(node);
+    node->hash = hash(node->address, node->salt + node->port);
     return node;
 }
 

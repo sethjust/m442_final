@@ -32,7 +32,7 @@ int remote_add(node_t* node, obj_t* obj) { //FIXME
 }
 
 int add(obj_t* obj) {
-  hash_t n = hash(obj);
+  hash_t n = hash(obj->name, obj->salt);
 
   node_t* node = next_node(n);
 
@@ -115,7 +115,7 @@ char* process_msg(char* message) {
             return "NACK";
         }
 
-        obj = local_get_object(hash(Obj(n, name, "", "")));
+        obj = local_get_object(hash(name, n));
         //obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
 
         buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
