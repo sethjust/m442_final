@@ -86,13 +86,13 @@ char* process_msg(char* message) {
 
         if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
-        char* buffer = malloc((22) * sizeof(char));
-        sprintf(buffer, "ACK:%s", tostr(obj));
-        if (file_hash_exists(obj->hash)) {
-            printf("%s\n", tostr(local_get_object(obj->hash)));
-        } else {
-            printf("could not find hash %08X\n", obj->hash);
-        }
+//        char* buffer = malloc((22) * sizeof(char));
+//        sprintf(buffer, "ACK:%s", tostr(obj));
+//        if (file_hash_exists(obj->hash)) {
+//            printf("%s\n", tostr(local_get_object(obj->hash)));
+//        } else {
+//            printf("could not find hash %08X\n", obj->hash);
+//        }
         return buffer;
     }
     //TODO: BADD
