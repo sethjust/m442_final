@@ -6,8 +6,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define MODULUS (1<<16) //FIXME
-
 typedef unsigned int hash_t;
 
 /* An object is identified by its name and a random identifier. */
@@ -21,7 +19,6 @@ typedef struct _obj_t {
         For a file: "FILE\0"
         For a job: "JOB:outfilehash:complete\0"
           where complete is one of '0' or '1'
-      
       */
 } obj_t;
 
@@ -32,6 +29,16 @@ typedef struct _node_t {
     hash_t hash;
     enum _type {LOCAL, REMOTE} type;
 } node_t;
+
+typedef struct _queue_node_t {
+    node_t *node;
+    struct _queue_node_t *next;
+} queue_node_t;
+
+typedef struct _queue_t {
+    queue_node_t *head;
+    queue_node_t *tail;
+} queue_t;
 
 hash_t hash(obj_t* obj);
 obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
