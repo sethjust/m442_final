@@ -1,21 +1,35 @@
 This project is meant to provide a distributed Python compute service. This
-repository currently contains only elements of the central distributed object
-store, written in C.
+repository currently contains elements of the central distributed object store,
+written in C, as well as a python library and rudimentary user client and
+runner executables, written in python.
 
-The architecture of this store is a network of peer servers with some (as yet
-undecided) way of knowing about its peers. This code implements communication
-between servers via socket connections. Each server listens on a socket and
-sequentially accepts connections (hopefully this will become threaded at some
-point).  Each connection is a series of two way null-terminated string
-exchanges of the following format: first the connecting peer sends
-"COMMAND{:data}*" and the server responds with "[ACK|NACK]{:data}*". In both
-cases the data formatting is determined by the command sent.  Each string is
-preceeded by a 6 hexadecimal digits. The first four characters indicate the
-length (in bytes, not including the null terminator) of the message to follow
-(allowing messages up to 65536 bytes), while the final two are the sum of all
-the bytes in the message (modulo 16^2).  All clients should send the message
-"STOP" before closing the socket. (This is technically unneccessary, as a
-zero-length message results from the socket closing, but is considered polite).
+The client is a fairly simple wrapper around the socket RPC described below.
+The runner utilizes the client's libraries to interact with a python sandbox.
+
+Running the system requires:
+1. Running 1 or more C server instances:
+  a. On hostA, run ./server. This will start a server on port 11111.
+  b. Run more servers with ./server localport server port, where server:port is
+    another server.
+2. Setting up one ore more runner instances:
+  a. TODO
+3. Using the client api! Documentation coming soon!
+
+The architecture of the object store (or "cloud") is a network of peer servers
+with some (as yet undecided) way of knowing about its peers. This code
+implements communication between servers via socket connections. Each server
+listens on a socket and sequentially accepts connections (hopefully this will
+become threaded at some point). Each connection is a series of two way
+null-terminated string exchanges of the following format: first the connecting
+peer sends "COMMAND{:data}*" and the server responds with "[ACK|NACK]{:data}*".
+In both cases the data formatting is determined by the command sent.  Each
+string is preceeded by a 6 hexadecimal digits. The first four characters
+indicate the length (in bytes, not including the null terminator) of the
+message to follow (allowing messages up to 65536 bytes), while the final two
+are the sum of all the bytes in the message (modulo 16^2).  All clients should
+send the message "STOP" before closing the socket. (This is technically
+unneccessary, as a zero-length message results from the socket closing, but is
+considered polite).
 
 The following commands are processed by storage nodes:
   SADD:host:port:salt -> ACK -- add a server record
