@@ -43,11 +43,11 @@ void free_obj(obj_t *obj)
     free(obj);
 }
 
-char* tostr(obj_t* obj)
+char* tostr(obj_t* obj) // representation of obj in response to ADD
 {
   char* str = malloc((12+strlen(obj->name)) * sizeof(char));
       // the formatting should add at most 12 characters
-  sprintf(str, "%08X:%08X", obj->salt, obj->hash);
+  sprintf(str, "%08X", obj->hash);
   return str;
 }
 

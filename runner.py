@@ -118,7 +118,9 @@ def exec_sandbox(code):
 if __name__ == "__main__":
   from client import ComputeCloud, rname
 
-  s = ComputeCloud("134.10.30.239", 11111)
+#  s = ComputeCloud("134.10.30.239", 11111)
+  s = ComputeCloud("localhost", 11111)
+
 
   code = '''
 import os

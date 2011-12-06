@@ -119,23 +119,22 @@ char* process_msg(char* message) {
     //TODO: JADD
     else if (!strcmp(head, "GET")) {
 
-        char *hash, *buffer;
+        char *key, *buffer;
         int n;
         obj_t *obj;
 
-        hash = strtok_r(NULL, ":", &save_ptr);
+        key = strtok_r(NULL, ":", &save_ptr);
 
-        if (hash == NULL) {
-            printf("did not get salt\n");
+        if (key == NULL) {
+            printf("did not get hash\n");
             return "NACK";
         }
-        if (!(htoi(hash, &n)==8)) {
-            printf("did not parse entire salt\n");
+        if (!(htoi(key, &n)==8)) {
+            printf("did not parse entire hash\n");
             return "NACK";
         }
 
-        obj = local_get_object(hash(name, n)); /* FIXME: Shouldn't always be local. */
-        //obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
+        obj = local_get_object(n); /* FIXME: Shouldn't always be local. */
 
         buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
         sprintf(buffer, "ACK:%s", obj->bytes);
@@ -159,6 +158,7 @@ char* process_msg(char* message) {
         free(temp);
         return buffer;
     }
+    //TODO: GETJ
     //TODO: SUCC
     else {
         return "NACK";

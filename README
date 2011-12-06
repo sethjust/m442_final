@@ -41,12 +41,14 @@ human-intuitive) manner.
 Objects are stored in "cloud" of peer servers using a relatively simple
 consistent hashing scheme. All stored objects (servers, jobs, and files) are
 given an arbitrary-length name and an integer salt, which is used to produce a
-32-bit hash value. These hash values determine the storage location of an
-object, namely the immediately subsequent server(s) in keyspace. Any server
-will accept requests concering any object, but may make connections with other
-servers before responding. Note that the salt associated with a server object
-allows any machine to have multiple distinct locations in keyspace; this is an
-intended feature to aid load-balancing.
+32-bit hash value. This is the only use of names at the moment, but the feature
+is intended to add user-friendliness to large collections of stored objects.
+Objects' hash values determine the storage location of an object, namely the
+immediately subsequent server(s) in keyspace. Any server will accept requests
+concering any object, but may make connections with other servers before
+responding. Note that the salt associated with a server object allows any
+machine to have multiple distinct locations in keyspace; this is an intended
+feature to aid load-balancing.
 Because we are not worrying about multiple server failures, we need only keep
 two copies of any piece of data to ensure it is not lost. Thus objects are
 stored on two subsequent servers. Note that at the moment there is no guarantee

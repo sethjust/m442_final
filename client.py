@@ -52,16 +52,15 @@ class ComputeCloud:
       self.cloud = cloud
       self.name = name
 
-      if (self.invalid(key[:8]) or self.invalid(key[9:])):
+      if self.invalid(key):
         raise ComputeCloud.FileObject.ParseError
-      self.salt = key[:8]
-      self.hash = key[9:]
+      self.hash = key
 
     def __repr__(self):
       return "<FileObject with hash "+self.hash+">"
 
     def get(self):
-      res = self.cloud.call("GET:"+self.name+":"+self.salt)
+      res = self.cloud.call("GET:"+self.hash)
       if res[:3] == "ACK":
         return base64.b64decode(res[4:])
       else: return None
