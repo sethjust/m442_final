@@ -18,7 +18,7 @@ the bytes in the message (modulo 16^2).  All clients should send the message
 zero-length message results from the socket closing, but is considered polite).
 
 The following commands are processed by storage nodes:
-  SADD:host:port:salt -> ACK -- add a server record
+  SADD{:host:port:salt}* -> ACK -- add server records
   ADD:name:bytes -> ACK:salt:hash -- upload a file
   BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
   JADD:name:sourcefile:outputname -> ACK:outputsalt -- add a job

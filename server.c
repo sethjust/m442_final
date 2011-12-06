@@ -2,6 +2,8 @@
 
 // FUNCTIONS
 
+static void add_node_self(int count);
+
 sqlite3 *db_file;
 sqlite3 *db_node;
 
@@ -133,7 +135,7 @@ char* process_msg(char* message) {
             return "NACK";
         }
 
-        obj = local_get_object(hash(name, n));
+        obj = local_get_object(hash(name, n)); /* FIXME: Shouldn't always be local. */
         //obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
 
         buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
@@ -144,9 +146,19 @@ char* process_msg(char* message) {
     else if (!strcmp(head, "GETS")) {
         printf("got gets\n");
 
-        //TODO: get results from DB
-
-        return "ACK:127.0.0.1:11111:0";
+        char *buffer = malloc(sizeof(*buffer) * GETS_SIZE);
+        char *temp = malloc(sizeof(*temp) * 40);
+        sprintf(buffer, "ACK");
+        hash_t hash = 0;
+        while (hash != next_node_hash(hash)) {
+            hash = next_node_hash(hash);
+            node_t *node = local_get_node(hash);
+            sprintf(temp, ":%s:%d:%d", node->address, node->port, node->salt);
+            strcat(buffer, temp);
+            free_node(node);
+        }
+        free(temp);
+        return buffer;
     }
     //TODO: SUCC
     else {
@@ -158,7 +170,8 @@ int init_server_table(char* server, int port) {
   char* buffer;
   int res;
   int connection;
-  
+
+  /* FIXME: Shouldn't be a single gets. */
   // open a connection to our given server
   printf("connecting to %s:%d\n", server, port);
   res = make_connection_with(server, port, &connection);
@@ -186,6 +199,8 @@ void  INThandler(int sig)
   exit(0);
 }
 
+int my_port;
+char *my_ip;
 int main(int argc, char** argv) {
   signal(SIGINT, INThandler); // register a signal handler for Ctrl-C
 
@@ -196,18 +211,19 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  int port;
   int result;
 
   if (argc < 2) {
-    port = 11111;
+    my_port = 11111;
   } else {
-    port = atoi(argv[1]);
+    my_port = atoi(argv[1]);
   }
+  my_ip = get_self_ip();
 
   init_db();
 
-  result = set_up_listener(port, &listener);
+  add_node_self(1); /* Test with just one node per server. */
+  result = set_up_listener(my_port, &listener);
   if (result < 0) {
     printf("failed to set up listener (%s)\n", strerror(errno));
     return result;
@@ -237,4 +253,14 @@ int main(int argc, char** argv) {
   }
 
   return 0;
+}
+
+static void add_node_self(int count)
+{
+    int i;
+    for (i = 0; i < count; i++) {
+        node_t *node = Node(i, my_ip, my_port);
+        local_add_node(node);
+        free_node(node);
+    }
 }
