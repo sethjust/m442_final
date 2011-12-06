@@ -56,10 +56,10 @@ class VirtualizedRunnerProc(VirtualizedSandboxedProc):
     # This call is missing from the other class, preventing us from using open
     f = self.get_file(fd)
 
-    # For File (not RealFile) objects f will be a StringIO, not a file, so
+    # For File (not RealFile) objects, f will be a StringIO, not a file, so
     # we'll need to cheat.
     if not isinstance(f, file):
-      return self.virtual_root.join('tmp').join('script.py').stat()
+      return self.virtual_root.join('tmp').join('file').stat()
 
     # Now we can do a regular stat
     dirnode = self.virtual_root
@@ -112,9 +112,9 @@ class PyPySandboxedProc(VirtualizedRunnerProc, SimpleIOSandboxedProc):
           exclude=exclude),
         }),
       'tmp': tmpdirnode,
-      'net': Dir({
-          'test': File("this is a test")
-        })
+#      'net': Dir({
+#          'test': File("this is a test")
+#        })
       })
 
 # Code to interact with the readevalprint example class
@@ -122,15 +122,15 @@ def exec_sandbox(cloud, code):
 #  try:
     tmpdir = tempfile.mkdtemp()
 
-    tmpscript = open(os.path.join(tmpdir, "script.py"), 'w')
-    tmpscript.write(code)
-    tmpscript.close()
+    tmp = open(os.path.join(tmpdir, "file"), 'w')
+    tmp.write("this space intentionally left blank")
+    tmp.close()
 
     sandproc = PyPySandboxedProc(
         cloud,
         SANDBOX_BIN,
-        #['-c', code,'--timeout',str(TIMEOUT),],
-        ['/tmp/script.py','--timeout',str(TIMEOUT),],
+        ['-c', code,'--timeout',str(TIMEOUT),],
+        #['/tmp/script.py','--timeout',str(TIMEOUT),],
         tmpdir # this is dir we just made that will become /tmp in the sandbox
         )
     try:
@@ -153,22 +153,23 @@ def exec_sandbox(cloud, code):
 ##############################################
 if __name__ == "__main__":
   host = "localhost"
-  port = 1111
+  port = 11111
   if len(sys.argv)==2:
     port = int(sys.argv[1])
   elif len(sys.argv)==3:
     host = sys.argv[1]
     port = int(sys.argv[2])
 
-#  s = ComputeCloud("134.10.30.239", 11111)
-  s = ComputeCloud("localhost", 11111)
+  print "Connecting to", host+":"+str(port)
+
+  s = ComputeCloud(host, port)
 
   code = '''
 import os
-print open("/net/EBEE231F", 'r').read()
+print open("/net/772E2E0D", 'r').read()
 '''
 
-  f = s.add_string(rname(), code)
+  f = s.add_string("testread", code)
   out, err = exec_sandbox(s, f.get())
 
   print '=' *10

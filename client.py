@@ -107,3 +107,5 @@ if __name__ == '__main__':
   f = s.add_string(rname(), "this is a test")
   print f
   print f.get()
+  print s.call("JADD:name:bytes:test:"+f.hash)
+#    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job

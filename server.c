@@ -87,7 +87,7 @@ char* process_msg(char* message) {
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE:1"); // use & increment the salt
 
         if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
@@ -107,7 +107,7 @@ char* process_msg(char* message) {
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE:1"); // use & increment the salt
 
         if (local_add(obj)) return "NACK";
 
@@ -116,7 +116,38 @@ char* process_msg(char* message) {
         free_obj(obj);
         return buffer;
     }
-    //TODO: JADD
+    else if (!strcmp(head, "JADD")) {
+//    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
+        int result;
+        char *name, *bytes, *output, *input;
+        char *metadata, *buffer;
+
+        name = strtok_r(NULL, ":", &save_ptr);
+        bytes = strtok_r(NULL, ":", &save_ptr);
+        output = strtok_r(NULL, ":", &save_ptr);
+
+        if (output == NULL) {
+          return "NACK";
+        }
+        
+//        For a job: "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
+        metadata = (char*) malloc(15*sizeof(char));
+        sprintf(metadata, "JOB:0:%s:00000000", output); //FIXME: create dummy file
+
+        while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
+          realloc(metadata, strlen(metadata)+7);
+          strcpy(&(metadata[strlen(metadata)]), ":");
+          strcpy(&(metadata[strlen(metadata)]), input);
+        }
+
+        obj_t* obj = Obj(salt_counter++, name, bytes, metadata); // use & increment the salt //TODO: not atomic
+
+        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
+
+        buffer = (char*)malloc(13*sizeof(char));
+        sprintf(buffer, "ACK:%08X", obj->hash);
+        return buffer;
+    }
     else if (!strcmp(head, "GET")) {
 
         char *key, *buffer;
@@ -159,6 +190,7 @@ char* process_msg(char* message) {
         return buffer;
     }
     //TODO: GETJ
+//    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
     //TODO: SUCC
     else {
         return "NACK";

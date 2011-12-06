@@ -32,14 +32,18 @@ unneccessary, as a zero-length message results from the socket closing, but is
 considered polite).
 
 The following commands are processed by storage nodes:
-  SADD{:host:port:salt}* -> ACK -- add server records
-  ADD:name:bytes -> ACK:hash -- upload a file
-  BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
-  JADD:name:sourcefile:outputname -> ACK:outputhash -- add a job
-  GET:hash -> ACK:bytes -- get the contents of a file
-  GETS -> ACK{:host:port:salt}* -- get a server table
-  GETJ -> ACK:sourcefilehash:outputhash
-  SUCC -> ACK -- notify a server that their successor has gone down
+  File-related:
+    ADD:name:bytes -> ACK:hash -- upload a file
+    BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
+    GET:hash -> ACK:bytes -- get the contents of a file
+    UPD:name:salt:bytes -> ACK -- update file contents
+  Job-related:
+    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
+    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
+  Server-related:
+    SADD{:host:port:salt}* -> ACK -- add server records
+    GETS -> ACK{:host:port:salt}* -- get a server table
+    SUCC -> ACK -- notify a server that their successor has gone down
 
 A word on data representation:
   hostnames are strings; dotted quads or dns names
