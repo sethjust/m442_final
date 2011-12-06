@@ -138,7 +138,7 @@ char* process_msg(char* message) {
         obj = local_get_object(hash(name, n)); /* FIXME: Shouldn't always be local. */
         //obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
 
-        buffer = (char*) malloc((5+strlen(obj->bytes))*sizeof(char));
+        buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
         sprintf(buffer, "ACK:%s", obj->bytes);
 
         return buffer;
