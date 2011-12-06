@@ -32,12 +32,13 @@ unneccessary, as a zero-length message results from the socket closing, but is
 considered polite).
 
 The following commands are processed by storage nodes:
-  SADD:host:port:salt -> ACK -- add a server record
-  ADD:name:bytes -> ACK:salt:hash -- upload a file
+  SADD{:host:port:salt}* -> ACK -- add server records
+  ADD:name:bytes -> ACK:hash -- upload a file
   BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
-  JADD:name:sourcefile:outputname -> ACK:outputsalt -- add a job
+  JADD:name:sourcefile:outputname -> ACK:outputhash -- add a job
   GET:hash -> ACK:bytes -- get the contents of a file
   GETS -> ACK{:host:port:salt}* -- get a server table
+  GETJ -> ACK:sourcefilehash:outputhash
   SUCC -> ACK -- notify a server that their successor has gone down
 
 A word on data representation:
@@ -54,12 +55,14 @@ human-intuitive) manner.
 Objects are stored in "cloud" of peer servers using a relatively simple
 consistent hashing scheme. All stored objects (servers, jobs, and files) are
 given an arbitrary-length name and an integer salt, which is used to produce a
-32-bit hash value. These hash values determine the storage location of an
-object, namely the immediately subsequent server(s) in keyspace. Any server
-will accept requests concering any object, but may make connections with other
-servers before responding. Note that the salt associated with a server object
-allows any machine to have multiple distinct locations in keyspace; this is an
-intended feature to aid load-balancing.
+32-bit hash value. This is the only use of names at the moment, but the feature
+is intended to add user-friendliness to large collections of stored objects.
+Objects' hash values determine the storage location of an object, namely the
+immediately subsequent server(s) in keyspace. Any server will accept requests
+concering any object, but may make connections with other servers before
+responding. Note that the salt associated with a server object allows any
+machine to have multiple distinct locations in keyspace; this is an intended
+feature to aid load-balancing.
 Because we are not worrying about multiple server failures, we need only keep
 two copies of any piece of data to ensure it is not lost. Thus objects are
 stored on two subsequent servers. Note that at the moment there is no guarantee

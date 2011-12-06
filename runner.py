@@ -118,18 +118,18 @@ def exec_sandbox(code):
 if __name__ == "__main__":
   from client import ComputeCloud, rname
 
-  s = ComputeCloud("134.10.30.239", 11111)
+#  s = ComputeCloud("134.10.30.239", 11111)
+  s = ComputeCloud("localhost", 11111)
+
 
   code = '''
 import os
 print open("/net/test", 'r').read()
 '''
 
-#  f = s.add_string(rname(), code)
-#  print f
-#  out, err = exec_sandbox(f.get())
-
-  out, err = exec_sandbox(code)
+  f = s.add_string(rname(), code)
+  out, err = exec_sandbox(f.get())
+#  out, err = exec_sandbox(code)
 
   print '=' *10
   print 'OUTPUT\n%s' % out
