@@ -35,7 +35,7 @@ class ComputeCloud:
   def add_string(self, name, string):
     res = self.call("ADD:"+name+":"+base64.b64encode(string))
     if res[:3] == "ACK":
-      return ComputeCloud.FileObject(self, name, res[4:])
+      return ComputeCloud.FileObject(self, res[4:], name)
     else: return None
 
   def add_file(self, name, path):
@@ -48,7 +48,7 @@ class ComputeCloud:
     pass
 
   class FileObject:
-    def __init__(self, cloud, name, key):
+    def __init__(self, cloud, key, name=''):
       self.cloud = cloud
       self.name = name
 
