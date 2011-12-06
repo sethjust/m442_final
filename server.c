@@ -259,6 +259,7 @@ static void add_node_self(int count)
     int i;
     for (i = 0; i < count; i++) {
         node_t *node = Node(i, my_ip, my_port);
+        node->type = LOCAL;
         local_add_node(node);
         free_node(node);
     }
