@@ -63,6 +63,28 @@ obj_t *local_get_object(hash_t hash)
     return obj;
 }
 
+hash_t next_object_hash(hash_t hash)
+{
+    sqlite3_stmt *p_stmn;
+    hash_t next_hash;
+    int retv;
+
+    sqlite3_prepare_v2(db_file, "SELECT hash FROM files WHERE (hash > ?) ORDER BY hash ASC", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        next_hash = sqlite3_column_int64(p_stmn, 0);
+    } else if (retv == SQLITE_DONE) {
+        next_hash = hash;
+    } else {
+        node_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return next_hash;
+}
+
 int local_add_object(obj_t *obj)
 {
     sqlite3_stmt *p_stmn;

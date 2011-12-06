@@ -6,6 +6,8 @@
 #include <stdio.h>
 
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
@@ -25,5 +27,6 @@ int recv_message(int socket, char** buffer);
 int htoi (const char *ptr, int *result);
 int csum(const char* msg);
 void conn_listen(int socket);
+char *get_self_ip(void);
 
 #endif

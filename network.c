@@ -217,3 +217,28 @@ void conn_listen(int socket) {
     send_message(socket, process_msg(buffer)); // Note that process_msg() may have side effects.
   } while (res > 0 && strcmp(buffer,"STOP"));
 }
+
+char *get_self_ip(void)
+{
+    /* adapted from some code on Stack Overflow. */
+    char *buffer = malloc(sizeof(buffer) * 20);
+    int buflen = 20;
+
+    struct sockaddr_in serv;
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+
+    serv.sin_family = AF_INET;
+    serv.sin_port = htons(53); /* DNS port. */
+    (serv.sin_addr).s_addr = inet_addr("8.8.8.8"); /* Google DNS address. */
+
+    connect(s, (const struct sockaddr *) &serv, sizeof(serv));
+
+    struct sockaddr_in name;
+    socklen_t namelen = sizeof(name);
+    getsockname(s, (struct sockaddr *) &name, &namelen);
+
+    inet_ntop(AF_INET, &name.sin_addr, buffer, buflen);
+    close(s);
+
+    return buffer;
+}

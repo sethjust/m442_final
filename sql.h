@@ -17,6 +17,7 @@ bool file_hash_exists(hash_t hash);
 obj_t *local_get_object(hash_t hash);
 int local_add_object(obj_t *obj);
 int local_remove_object(hash_t hash);
+hash_t next_object_hash(hash_t hash);
 
 /* SQL node functions */
 bool node_hash_exists(hash_t hash);
