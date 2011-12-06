@@ -125,11 +125,9 @@ import os
 print open("/net/test", 'r').read()
 '''
 
-#  f = s.add_string(rname(), code)
-#  print f
-#  out, err = exec_sandbox(f.get())
-
-  out, err = exec_sandbox(code)
+  f = s.add_string(rname(), code)
+  out, err = exec_sandbox(f.get())
+#  out, err = exec_sandbox(code)
 
   print '=' *10
   print 'OUTPUT\n%s' % out

@@ -99,18 +99,17 @@ char* process_msg(char* message) {
     //TODO: JADD
     else if (!strcmp(head, "GET")) {
 
-        char *name, *salt, *buffer;
+        char *hash, *buffer;
         int n;
         obj_t *obj;
 
-        name = strtok_r(NULL, ":", &save_ptr);
-        salt = strtok_r(NULL, ":", &save_ptr);
+        hash = strtok_r(NULL, ":", &save_ptr);
 
-        if (salt == NULL) {
+        if (hash == NULL) {
             printf("did not get salt\n");
             return "NACK";
         }
-        if (!(htoi(salt, &n)==8)) {
+        if (!(htoi(hash, &n)==8)) {
             printf("did not parse entire salt\n");
             return "NACK";
         }
