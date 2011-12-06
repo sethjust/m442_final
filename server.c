@@ -56,23 +56,26 @@ char* process_msg(char* message) {
     }
     else if (!strcmp(head, "SADD")) {
         int result;
+        char *host, *port, *salt;
 
-        char *host = strtok_r(NULL, ":", &save_ptr);
-        char *port = strtok_r(NULL, ":", &save_ptr);
-        char *salt = strtok_r(NULL, ":", &save_ptr);
+        while ((host = strtok_r(NULL, ":", &save_ptr)) != NULL) {
+            port = strtok_r(NULL, ":", &save_ptr);
+            salt = strtok_r(NULL, ":", &save_ptr);
 
-        if ( salt == NULL ) return "NACK";  // if we get three tokens, we're
-                                            // (naïvely) good
-        htoi(salt, &result);
-        node_t *node = Node(result, host, atoi(port));
-        node->type = REMOTE;
+            if (salt == NULL) return "NACK";  // if we get three tokens, we're
+                                              // (naïvely) good
+            htoi(salt, &result);
+            node_t *node = Node(result, host, atoi(port));
+            node->type = REMOTE;
 
-        if (!node_hash_exists(node->hash)) {
-            printf("adding %s:%d:%s\n", host, atoi(port), salt);
-            local_add_node(node);
+            if (!node_hash_exists(node->hash)) {
+                printf("adding %s:%d:%s\n", host, atoi(port), salt);
+                local_add_node(node);
+            }
+
+            free_node(node);
         }
 
-        free_node(node);
         return "ACK";
     }
     else if (!strcmp(head, "ADD")) {
@@ -95,7 +98,22 @@ char* process_msg(char* message) {
 //        }
         return buffer;
     }
-    //TODO: BADD
+    else if (!strcmp(head, "BADD")) {
+
+        char *name = strtok_r(NULL, ":", &save_ptr);
+        char *bytes = strtok_r(NULL, ":", &save_ptr);
+
+        if (bytes == NULL) return "NACK";
+
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE"); // use & increment the salt
+
+        if (local_add(obj)) return "NACK";
+
+        char* buffer = malloc((22) * sizeof(char));
+        sprintf(buffer, "ACK:%s", tostr(obj));
+        free_obj(obj);
+        return buffer;
+    }
     //TODO: JADD
     else if (!strcmp(head, "GET")) {
 
