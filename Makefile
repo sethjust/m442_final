@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -ggdb -c -Wall -Wextra -std=gnu99
-LFLAGS = -lsqlite3
+LFLAGS = -ggdb -lsqlite3
 
 all: server
 

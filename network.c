@@ -201,7 +201,7 @@ int csum(const char* msg) {
 }
 
 void conn_listen(int socket) {
-  char* buffer;
+  char *buffer, *resp;
   int res;
   // repeatedly respond to lines sent by the client
   do {
@@ -212,9 +212,11 @@ void conn_listen(int socket) {
       continue;
     }
 
-    printf("Client says \"%s\".\n",buffer);
+    resp = process_msg(buffer);
 
-    send_message(socket, process_msg(buffer)); // Note that process_msg() may have side effects.
+    printf("Client says \"%s\".\nResponding \"%s\"\n", buffer, resp);
+
+    send_message(socket, resp); // Note that process_msg() may have side effects.
   } while (res > 0 && strcmp(buffer,"STOP"));
 }
 

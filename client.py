@@ -101,7 +101,12 @@ def rname(len=8):
 
 if __name__ == '__main__':
   HOST = "localhost"
-  PORT = int(sys.argv[1]) if len(sys.argv)>1 else 11111
+  PORT = 11111
+  if len(sys.argv)==2:
+    PORT = int(sys.argv[1])
+  elif len(sys.argv)==3:
+    HOST = sys.argv[1]
+    PORT = int(sys.argv[2])
 
   s = ComputeCloud(HOST, PORT)
   f = s.add_string(rname(), "this is a test")
@@ -109,4 +114,5 @@ if __name__ == '__main__':
 #  print f.get()
   code = '''print "this is a test"'''
   print s.call("JADD:name:"+base64.b64encode(code)+":test:"+f.hash)
+#  print s.call("JADD:name:"+base64.b64encode(code)+":test")
 #    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
