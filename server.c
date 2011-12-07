@@ -117,7 +117,6 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "JADD")) {
-//    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
         int result;
         char *name, *bytes, *output, *input;
         char *metadata, *buffer;
@@ -182,15 +181,40 @@ char* process_msg(char* message) {
         while (hash != next_node_hash(hash)) {
             hash = next_node_hash(hash);
             node_t *node = local_get_node(hash);
-            sprintf(temp, ":%s:%d:%d", node->address, node->port, node->salt);
+            sprintf(temp, ":%s:%d:%08X", node->address, node->port, node->salt);
             strcat(buffer, temp);
             free_node(node);
         }
         free(temp);
         return buffer;
     }
-    //TODO: GETJ
+    else if (!strcmp(head, "GETJ")) {
 //    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
+      char *buffer, *save, *outname, *outsalt;
+      hash_t n = 0;
+      obj_t* obj;
+      
+      for (;;) { //FIXME: add a next job query
+        n = next_object_hash(n);
+        obj = local_get_object(n);
+
+        // Metadata for a job:
+        // "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
+        buffer = strtok_r(obj->metadata, ":", &save);
+        if (!strcmp(buffer, "JOB")) {
+          buffer = strtok_r(NULL, ":", &save);
+          if (!strcmp(buffer, "0")) {
+            break;
+          }
+        }
+      }
+      outname = strtok_r(NULL, ":", &save);
+      outsalt = strtok_r(NULL, ":", &save);
+
+      buffer = (char*)malloc(sizeof(char)*(8+strlen(obj->bytes)+strlen(outname)+strlen(outsalt)+strlen(save)));
+      sprintf(buffer, "ACK:%s:%s:%s:%s", obj->bytes, outname, outsalt, save);
+      return buffer;
+    }
     //TODO: SUCC
     else {
         return "NACK";

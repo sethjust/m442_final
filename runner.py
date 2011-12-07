@@ -32,6 +32,7 @@ tempfile.tempdir = '/tmp/'
 ## START MY CODE ##
 ###################
 
+import base64
 from client import ComputeCloud, rname
 
 # This class is inheirited by our sandbox code; it hijacks some calls, as well
@@ -43,7 +44,7 @@ class VirtualizedRunnerProc(VirtualizedSandboxedProc):
   def get_node(self, vpath):
     if vpath[:5] == '/net/': #network object; special handling
       print "getting hash", vpath[5:]
-      return File(ComputeCloud.FileObject(self.cloud, vpath[5:]).get())
+      return File(self.job.get(vpath[5:]))
     dirnode, name = self.translate_path(vpath)
     if name:
       node = dirnode.join(name)
@@ -84,8 +85,8 @@ class PyPySandboxedProc(VirtualizedRunnerProc, SimpleIOSandboxedProc):
   virtual_env = {}
   virtual_console_isatty = True
 
-  def __init__(self, cloud, executable, arguments, tmpdir=None):
-    self.cloud = cloud
+  def __init__(self, job, executable, arguments, tmpdir=None):
+    self.job = job
     self.executable = executable = os.path.abspath(executable)
     self.tmpdir = tmpdir
     super(PyPySandboxedProc, self).__init__( [self.argv0] + arguments,
@@ -118,7 +119,7 @@ class PyPySandboxedProc(VirtualizedRunnerProc, SimpleIOSandboxedProc):
       })
 
 # Code to interact with the readevalprint example class
-def exec_sandbox(cloud, code):
+def exec_sandbox(job):
 #  try:
     tmpdir = tempfile.mkdtemp()
 
@@ -127,9 +128,9 @@ def exec_sandbox(cloud, code):
     tmp.close()
 
     sandproc = PyPySandboxedProc(
-        cloud,
+        job,
         SANDBOX_BIN,
-        ['-c', code,'--timeout',str(TIMEOUT),],
+        ['-c', job.code,'--timeout',str(TIMEOUT),],
         #['/tmp/script.py','--timeout',str(TIMEOUT),],
         tmpdir # this is dir we just made that will become /tmp in the sandbox
         )
@@ -151,6 +152,30 @@ def exec_sandbox(cloud, code):
 ##############################################
 ## ComputeCloud Runner functions start here ##
 ##############################################
+
+class Job(object):
+  def __init__(self, cloud, code, outname, outsalt, inhashes):
+    self.cloud = cloud
+    self.code = code
+    self.outname = outname
+    self.outsalt = outsalt
+    self.files = dict( [ (key, ComputeCloud.FileObject(self.cloud, key)) for key in inhashes ] )
+
+  def get(self, key):
+    return self.files[key].get()
+
+  def do(self):
+    return exec_sandbox(self)
+    
+
+def get_job(cloud):
+#    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
+  res = cloud.call("GETJ")
+  res = res.split(':')
+  if res[0]!='ACK':
+    return None
+  else: return Job(cloud, base64.b64decode(res[1]), res[2], res[3], res[4:])
+
 if __name__ == "__main__":
   host = "localhost"
   port = 11111
@@ -164,13 +189,7 @@ if __name__ == "__main__":
 
   s = ComputeCloud(host, port)
 
-  code = '''
-import os
-print open("/net/772E2E0D", 'r').read()
-'''
-
-  f = s.add_string("testread", code)
-  out, err = exec_sandbox(s, f.get())
+  out, err = get_job(s).do()
 
   print '=' *10
   print 'OUTPUT\n%s' % out
