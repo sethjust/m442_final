@@ -48,7 +48,7 @@ int add(obj_t* obj) {
 int salt_counter = 0;
 
 char* process_msg(char* message) {
-//  printf("got message %s\n", message);
+  printf("got message %s\n", message);
 
     char *save_ptr;
     char *head = strtok_r(message, ":", &save_ptr);
@@ -134,7 +134,7 @@ char* process_msg(char* message) {
         sprintf(metadata, "JOB:0:%s:00000000", output); //FIXME: create dummy file
 
         while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
-          buffer = (char*)malloc((strlen(metadata)+9)*sizeof(char));
+          buffer = (char*)malloc((strlen(metadata)+10)*sizeof(char));
           sprintf(buffer, "%s:%s", metadata, input);
           metadata = buffer;
         }
@@ -190,16 +190,17 @@ char* process_msg(char* message) {
     }
     else if (!strcmp(head, "GETJ")) {
 //    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
-      char *buffer, *save, *outname, *outsalt, *files;
-      hash_t n = 0;
+      char *buffer, *save, *outname, *outsalt, *files, *hash;
+      hash_t n = 0; //FIXME: start in _local_ keyspace
       obj_t* obj;
       
-      for (;;) { //FIXME: add a next job query
+      for (;;) { //FIXME: add a next job query?
         n = next_object_hash(n);
         obj = local_get_object(n);
 
         // Metadata for a job:
         // "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
+        printf("%s\n", obj->metadata);
         buffer = strtok_r(obj->metadata, ":", &save);
         if (!strcmp(buffer, "JOB")) {
           buffer = strtok_r(NULL, ":", &save);
@@ -210,10 +211,22 @@ char* process_msg(char* message) {
       }
       outname = strtok_r(NULL, ":", &save);
       outsalt = strtok_r(NULL, ":", &save);
-      files = strtok_r(NULL, "!", &save); // For inexplicable reasons the ! needs to be there, as it will sometime crop up at the end of our strings
+
+      files = (char*)malloc(sizeof(char));
+      *files = 0;
+      while ((hash = strtok_r(NULL, ":", &save)) != NULL) {
+        buffer = (char*)malloc((strlen(files)+10)*sizeof(char));
+        if (!(htoi(hash, &n)==8)) {
+            printf("did not parse entire hash\n");
+            return "NACK";
+        }
+        hash[8]=0;
+        sprintf(buffer, "%s:%s:%s", files, hash, local_get_object(n)->name);
+        files = buffer;
+      }
 
       buffer = (char*)malloc(sizeof(char)*(8+strlen(obj->bytes)+strlen(outname)+strlen(outsalt)+strlen(files)));
-      sprintf(buffer, "ACK:%s:%s:%s:%s", obj->bytes, outname, outsalt, files);
+      sprintf(buffer, "ACK:%s:%s:%s%s", obj->bytes, outname, outsalt, files);
       return buffer;
     }
     //TODO: SUCC

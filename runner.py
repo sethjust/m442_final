@@ -43,7 +43,7 @@ class VirtualizedRunnerProc(VirtualizedSandboxedProc):
 
   def get_node(self, vpath):
     if vpath[:5] == '/net/': #network object; special handling
-      print "getting hash", vpath[5:]
+      print "getting file", vpath[5:]
       return File(self.job.get(vpath[5:]))
     dirnode, name = self.translate_path(vpath)
     if name:
@@ -159,14 +159,13 @@ class Job(object):
     self.code = code
     self.outname = outname
     self.outsalt = outsalt
-    self.files = dict( [ (key, ComputeCloud.FileObject(self.cloud, key)) for key in inhashes ] )
+    self.files = dict( [ (name, ComputeCloud.FileObject(self.cloud, key)) for (key, name) in [(inhashes[i], inhashes[i+1]) for i in range(0, len(inhashes), 2)] ] )
 
   def get(self, key):
     return self.files[key].get()
 
   def do(self):
     return exec_sandbox(self)
-    
 
 def get_job(cloud):
 #    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*

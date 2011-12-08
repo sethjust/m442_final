@@ -109,10 +109,10 @@ if __name__ == '__main__':
     PORT = int(sys.argv[2])
 
   s = ComputeCloud(HOST, PORT)
-  f = s.add_string(rname(), "this is a test")
-#  print f
-#  print f.get()
-  code = '''print "this is a test"'''
-  print s.call("JADD:name:"+base64.b64encode(code)+":test:"+f.hash)
-#  print s.call("JADD:name:"+base64.b64encode(code)+":test")
+  f = s.add_string("test", "this is a test file")
+  g = s.add_string("test2", "this is a test gile")
+  code = '''print open('/net/test', 'r').read()
+print open('/net/test2', 'r').read()'''
+
 #    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
+  print s.call("JADD:name:"+base64.b64encode(code)+":testjob:"+f.hash+":"+g.hash)

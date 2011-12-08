@@ -214,7 +214,8 @@ void conn_listen(int socket) {
 
     resp = process_msg(buffer);
 
-    printf("Client says \"%s\".\nResponding \"%s\"\n", buffer, resp);
+//    printf("Client says \"%s\".\nResponding \"%s\"\n", buffer, resp);
+    printf("Responding \"%s\"\n", resp);
 
     send_message(socket, resp); // Note that process_msg() may have side effects.
   } while (res > 0 && strcmp(buffer,"STOP"));

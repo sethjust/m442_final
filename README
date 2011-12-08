@@ -39,7 +39,7 @@ The following commands are processed by storage nodes:
     UPD:name:salt:bytes -> ACK -- update file contents
   Job-related:
     JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
-    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
+    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash:inputname}*
   Server-related:
     SADD{:host:port:salt}* -> ACK -- add server records
     GETS -> ACK{:host:port:salt}* -- get a server table
