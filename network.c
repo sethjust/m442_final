@@ -106,7 +106,7 @@ ssize_t recv_string(int socket, char *buffer, size_t maxlen) {
   char c;
   int pos;
 
-  for (pos = 0; pos <= maxlen; pos++) {
+  for (pos = 0; pos <= (int) maxlen; pos++) {
     if ((rc = read(socket, &c, 1))==1) {
       buffer[pos] = c;
       if (c==0) break;
@@ -126,8 +126,8 @@ int send_message(int socket, char* message) {
   char* buffer = (char*)malloc((6+strlen(message)+1)*sizeof(char));
   sprintf(buffer, "%04X%02X%s", (unsigned int)strlen(message), csum(message), message);
 
-  result = send_string(socket,buffer);
-  if (!(result == strlen(message))) return -1;
+  result = send_string(socket, buffer);
+  if (!(result == (int) strlen(message))) return -1;
   else return 0;
 }
 
