@@ -3,6 +3,7 @@
 // FUNCTIONS
 
 static void add_node_self(int count);
+static void pop_and_gets(queue_t *queue);
 
 sqlite3 *db_file;
 sqlite3 *db_node;
@@ -47,6 +48,7 @@ int add(obj_t* obj) {
 
 int salt_counter = 0;
 
+queue_t *my_queue = NULL;
 char* process_msg(char* message) {
   printf("got message %s\n", message);
 
@@ -73,6 +75,9 @@ char* process_msg(char* message) {
             if (!node_hash_exists(node->hash)) {
                 printf("adding %s:%d:%s\n", host, atoi(port), salt);
                 local_add_node(node);
+                if (my_queue != NULL) {
+                    push_queue(my_queue, node);
+                }
             }
 
             free_node(node);
@@ -236,26 +241,39 @@ char* process_msg(char* message) {
 }
 
 int init_server_table(char* server, int port) {
-  char* buffer;
-  int res;
-  int connection;
-
-  /* FIXME: Shouldn't be a single gets. */
-  // open a connection to our given server
-  printf("connecting to %s:%d\n", server, port);
-  res = make_connection_with(server, port, &connection);
-  if (res<0) return res;
-
-  send_message(connection, "GETS");
-  recv_message(connection, &buffer);
-  printf("%s\n", buffer);
-
-  send_message(connection, "STOP");
-  recv_message(connection, &buffer);
-  printf("%s\n", buffer);
-
-  close(connection);
+    my_queue = new_queue();
+    node_t *node = Node(0, server, port);
+    push_queue(my_queue, node);
+    while (!is_empty(my_queue)) {
+        pop_and_gets(my_queue);
+    }
+    my_queue = NULL;
 }
+
+static void pop_and_gets(queue_t *queue)
+{
+    char* buffer;
+    int res;
+    int connection;
+
+    node_t *node = pop_queue(queue);
+
+    printf("connecting to %s:%d\n", node->address, node->port);
+    /* Open a connection to our given server. */
+    res = make_connection_with(node->address, node->port, &connection);
+    if (res<0) return;
+
+    send_message(connection, "GETS");
+    recv_message(connection, &buffer);
+    printf("%s\n", buffer);
+
+    send_message(connection, "STOP");
+    recv_message(connection, &buffer);
+    printf("%s\n", buffer);
+
+    close(connection);
+}
+
 
 int listener, connection;//This will need to change for threading
 // Handle Ctrl-C to close sockets
@@ -270,6 +288,7 @@ void  INThandler(int sig)
 
 int my_port;
 char *my_ip;
+
 int main(int argc, char** argv) {
   signal(SIGINT, INThandler); // register a signal handler for Ctrl-C
 
@@ -291,7 +310,6 @@ int main(int argc, char** argv) {
 
   init_db();
 
-  add_node_self(1); /* Test with just one node per server. */
   result = set_up_listener(my_port, &listener);
   if (result < 0) {
     printf("failed to set up listener (%s)\n", strerror(errno));
@@ -307,6 +325,7 @@ int main(int argc, char** argv) {
       return -1;
     }
   }
+  add_node_self(3); /* FIXME: Test. */
 
   while (1) {
     // The (currently unthreaded) main loop waits for a connection, and then processes a series of messages
