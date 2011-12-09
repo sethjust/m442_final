@@ -7,8 +7,8 @@ import stat, tempfile, shutil
 from cStringIO import StringIO
 import cStringIO
 
-SANDBOX_BIN = os.path.abspath("./runner/pypy_src/pypy/translator/goal/pypy-c")
-SANDBOX_DIR = os.path.abspath("./runner/pypy_src/")
+SANDBOX_BIN = os.path.abspath("./pypy_src/pypy/translator/goal/pypy-c")
+SANDBOX_DIR = os.path.abspath("./pypy_src/")
 sys.path.insert(0, SANDBOX_DIR)
 
 # import pypy sandbox now that it's added to the path
