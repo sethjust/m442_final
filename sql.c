@@ -14,7 +14,7 @@ bool file_hash_exists(hash_t hash)
     int retv;
     bool exists;
 
-    sqlite3_prepare_v2(db_file, "SELECT hash FROM files WHERE hash = ?", -1, &p_stmn, NULL);
+    sqlite3_prepare_v2(db_file, "SELECT hash FROM files WHERE (hash = ?)", -1, &p_stmn, NULL);
     sqlite3_bind_int64(p_stmn, 1, hash);
 
     retv = sqlite3_step(p_stmn);
@@ -40,10 +40,11 @@ obj_t *local_get_object(hash_t hash)
     /* Set hash. */
     obj->hash = hash;
 
-    sqlite3_prepare_v2(db_file, "SELECT * FROM files WHERE hash = ?", -1, &p_stmn, NULL);
+    sqlite3_prepare_v2(db_file, "SELECT * FROM files WHERE (hash = ?)", -1, &p_stmn, NULL);
     sqlite3_bind_int64(p_stmn, 1, hash);
 
-    if (sqlite3_step(p_stmn) == SQLITE_ROW) {
+    int retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
         /* Get name. */
         char *result = (char *) sqlite3_column_text(p_stmn, 1);
         obj->name = strdup(result);
@@ -57,6 +58,8 @@ obj_t *local_get_object(hash_t hash)
         obj->bytes = strdup(result);
         /* Get status. */
         obj->complete = sqlite3_column_int(p_stmn, 5);
+    } else if (retv == SQLITE_DONE) {
+        return NULL;
     } else {
         file_db_crash();
     }

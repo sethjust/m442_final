@@ -11,9 +11,45 @@ Running the system requires:
   a. On hostA, run ./server. This will start a server on port 11111.
   b. Run more servers with ./server localport server port, where server:port is
     another server.
-2. Setting up one ore more runner instances:
+2. Setting up one or more runner instances:
   a. TODO
-3. Using the client api! Documentation coming soon!
+3. Using the client api:
+  a. In python, import the client module with
+      from client import ComputeCloud
+    Instances of this class will represent all our communications with a cloud
+    instance. To create one, initialize it with the hostname and port of a
+    server:
+
+      s = ComputeCloud("localhost", 11111)
+
+    You can now upload data to the cloud. An add operation will return an instance of ComputeCloud.FileObject, whose get() method returns the contents of the file.
+
+      f = s.add_string("name1", "contents")
+      g = s.add_file("name2", "./path/to/file")
+      print f.get() # prints "contents"
+
+    Adding jobs is similar, but requires more information to be provided: the
+    name of the job and its output file, the code to be run, and a list of
+    files that might be read (a namespace).  Adding a job returns a pair of
+    FileObjects, the first associated with the job object and the second
+    associated with the jobs output file. For example:
+
+      code = '''for path in ["/net/name1", "/net/name2"]:
+        print open(path, 'r').read()'''
+      job, out = s.add_job("jobname", code, "outputname", [f, g])
+
+    The above example hints at how jobs can receive input: they are created
+    along with a namespace, listing those files that they might access by name.
+    When a job is running, opening the path "/net/<name>" returns a file with
+    the contents from the LAST object listed in the namespace whose name
+    matches <name>. Notably however, these virtual files are soley a source of
+    _input_ for jobs, as any open that is not in read-only mode will fail, and
+    potentially terminate the job. Output is only accomplished by printing to
+    STDOUT and STDERR. These outputs are logged separately. STDERR output is
+    meant for debugging use, and is stored with the original job object after
+    execution.  STDOUT output is saved into the output file created along with
+    the job.  Notice that this means that only STDOUT output from a job may be
+    used as input by other jobs.
 
 The architecture of the object store (or "cloud") is a network of peer servers
 with some (as yet undecided) way of knowing about its peers. This code

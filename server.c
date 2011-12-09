@@ -58,7 +58,7 @@ int update_job(hash_t n, char* out, char* err) { //FIXME: locality
   int m;
   htoi(key, &m);
 
-  local_update_metadata(n, err); //save the stderr output to the jobs metadata
+  local_update_metadata(n, err); //save the stderr output to the job's metadata
   local_update_bytes(m, out); //save stdout to the outputfile
   return 0;
 }
@@ -115,15 +115,9 @@ char* process_msg(char* message) {
 
         char* buffer = malloc((22) * sizeof(char));
         sprintf(buffer, "ACK:%s", tostr(obj));
-//        if (file_hash_exists(obj->hash)) {
-//            printf("%s\n", tostr(local_get_object(obj->hash)));
-//        } else {
-//            printf("could not find hash %08X\n", obj->hash);
-//        }
         return buffer;
     }
     else if (!strcmp(head, "BADD")) {
-//    BADD:name:salt:complete:bytes -> ACK -- copy a file to a non-primary server
         int n;
 
         char *name = strtok_r(NULL, ":", &save_ptr);
@@ -143,7 +137,6 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "JADD")) {
-//    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
         int result;
         char *name, *bytes, *output, *input;
         char *metadata, *buffer;
@@ -157,27 +150,33 @@ char* process_msg(char* message) {
         }
 
         // create empty file
-        int n = salt_counter++; // use & increment the salt
-        obj_t* f = Obj(n, output, "", "FILE", 0);
+        int m = salt_counter++; // use & increment the salt
+        obj_t* f = Obj(m, output, "", "FILE", 0);
         add(f);
         
 //        For a job: "JOB:outputhash{:inputhash}*\0"
-        metadata = (char*) malloc(13*sizeof(char));
-        sprintf(metadata, "JOB:%08X", hash(output, n));
+        metadata = (char*) malloc(13*sizeof(char)+strlen(save_ptr));
+        sprintf(metadata, "JOB:%08X:%s", hash(output, m), save_ptr);
 
-        while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
-          buffer = (char*)malloc((strlen(metadata)+10)*sizeof(char));
-          sprintf(buffer, "%s:%s", metadata, input);
-          free(metadata);
-          metadata = buffer;
-        }
+//        int n;
+//        while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
+//          result = htoi(input, &n);
+//          if (!(result == 8)) {
+//            printf("did not parse entire hash\n");
+//            return "NACK";
+//          }
+//          if (!(file_hash_exists(n))) { //FIXME: locality
+//            printf("hash was not valid\n");
+//            return "NACK";
+//          }
+//        }
 
         obj_t* obj = Obj(salt_counter++, name, bytes, metadata, 0); // use & increment the salt //TODO: not atomic
 
         if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
         buffer = (char*)malloc(22*sizeof(char));
-        sprintf(buffer, "ACK:%08X:%08X", obj->hash, hash(output, n));
+        sprintf(buffer, "ACK:%08X:%08X", obj->hash, hash(output, m));
         return buffer;
     }
     else if (!strcmp(head, "GET")) {
@@ -222,7 +221,6 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "GETJ")) {
-//    GETJ -> ACK:sourcebytes:hash:{:inputhash:inputname}*
       char *buffer, *save, *outhash, *files, *hash;
       obj_t* obj = local_next_job(0); //FIXME: locality
       hash_t n;
