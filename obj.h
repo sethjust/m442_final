@@ -17,11 +17,10 @@ typedef struct _obj_t {
     char *bytes;
     char *metadata; /* job or file, output filename, completed, etc.
       Format is:
-        For a file: "FILE:complete\0"
-          where complete is one of '0' or '1'
-        For a job: "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
-          where complete is one of '0' or '1'
+        For a file: "FILE\0"
+        For a job: "JOB:outputhash{:inputhash}*\0"
       */
+    bool complete;
 } obj_t;
 
 typedef struct _node_t {
@@ -44,7 +43,7 @@ typedef struct _queue_t {
 
 hash_t hash(char *text, int salt);
 
-obj_t *Obj(int salt, char *name, char *bytes, char *metadata);
+obj_t *Obj(int salt, char *name, char *bytes, char *metadata, int complete);
 void free_obj(obj_t *obj);
 char *tostr(obj_t* obj);
 

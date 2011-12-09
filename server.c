@@ -45,6 +45,23 @@ int add(obj_t* obj) {
   }
 }
 
+int update_job(hash_t n, char* out, char* err) { //FIXME: locality
+//        For a job: "JOB:outputhash{:inputhash}*\0"
+  char *save;
+  obj_t* o = local_get_object(n);
+  if (strncmp(o->metadata, "JOB", 3)) return -1;
+
+  char *key = strtok_r(o->metadata, ":", &save);
+  key = strtok_r(NULL, ":", &save);
+
+  int m;
+  htoi(key, &m);
+
+  local_update_metadata(n, err); //save the stderr output to the jobs metadata
+  local_update_bytes(m, out); //save stdout to the outputfile
+  return 0;
+}
+
 int salt_counter = 0;
 
 char* process_msg(char* message) {
@@ -87,7 +104,7 @@ char* process_msg(char* message) {
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE:1"); // use & increment the salt
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", 1); // use & increment the salt
 
         if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
@@ -101,13 +118,17 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "BADD")) {
+//    BADD:name:salt:complete:bytes -> ACK -- copy a file to a non-primary server
+        int n;
 
         char *name = strtok_r(NULL, ":", &save_ptr);
+        char *salt = strtok_r(NULL, ":", &save_ptr);
+        bool complete = (n = strtok_r(NULL, ":", &save_ptr))=='0'?0:1;
         char *bytes = strtok_r(NULL, ":", &save_ptr);
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE:1"); // use & increment the salt
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", complete); // use & increment the salt
 
         if (local_add(obj)) return "NACK";
 
@@ -117,6 +138,7 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "JADD")) {
+//    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
         int result;
         char *name, *bytes, *output, *input;
         char *metadata, *buffer;
@@ -128,23 +150,29 @@ char* process_msg(char* message) {
         if (output == NULL) {
           return "NACK";
         }
+
+        // create empty file
+        int n = salt_counter++; // use & increment the salt
+        obj_t* f = Obj(n, output, "", "FILE", 0);
+        add(f);
         
-//        For a job: "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
-        metadata = (char*) malloc(16*sizeof(char));
-        sprintf(metadata, "JOB:0:%s:00000000", output); //FIXME: create dummy file
+//        For a job: "JOB:outputhash{:inputhash}*\0"
+        metadata = (char*) malloc(13*sizeof(char));
+        sprintf(metadata, "JOB:%08X", hash(output, n));
 
         while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
           buffer = (char*)malloc((strlen(metadata)+10)*sizeof(char));
           sprintf(buffer, "%s:%s", metadata, input);
+          free(metadata);
           metadata = buffer;
         }
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, metadata); // use & increment the salt //TODO: not atomic
+        obj_t* obj = Obj(salt_counter++, name, bytes, metadata, 0); // use & increment the salt //TODO: not atomic
 
         if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
 
-        buffer = (char*)malloc(13*sizeof(char));
-        sprintf(buffer, "ACK:%08X", obj->hash);
+        buffer = (char*)malloc(22*sizeof(char));
+        sprintf(buffer, "ACK:%08X:%08X", obj->hash, hash(output, n));
         return buffer;
     }
     else if (!strcmp(head, "GET")) {
@@ -189,47 +217,56 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "GETJ")) {
-//    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
-      char *buffer, *save, *outname, *outsalt, *files, *hash;
-      hash_t n = 0; //FIXME: start in _local_ keyspace
-      obj_t* obj;
-      
-      for (;;) { //FIXME: add a next job query?
-        n = next_object_hash(n);
-        obj = local_get_object(n);
+//    GETJ -> ACK:sourcebytes:hash:{:inputhash:inputname}*
+      char *buffer, *save, *outhash, *files, *hash;
+      obj_t* obj = local_next_job(0); //FIXME: locality
+      hash_t n;
 
-        // Metadata for a job:
-        // "JOB:complete:outfilename:outfilesalt{:inputhash}*\0"
-        printf("%s\n", obj->metadata);
-        buffer = strtok_r(obj->metadata, ":", &save);
-        if (!strcmp(buffer, "JOB")) {
-          buffer = strtok_r(NULL, ":", &save);
-          if (!strcmp(buffer, "0")) {
-            break;
-          }
-        }
-      }
-      outname = strtok_r(NULL, ":", &save);
-      outsalt = strtok_r(NULL, ":", &save);
+      if (obj == NULL) return "NACK";
+      
+//        For a job: "JOB:outputhash{:inputhash}*\0"
+      strtok_r(obj->metadata, ":", &save);
+      outhash = strtok_r(NULL, ":", &save);
 
       files = (char*)malloc(sizeof(char));
       *files = 0;
       while ((hash = strtok_r(NULL, ":", &save)) != NULL) {
-        buffer = (char*)malloc((strlen(files)+10)*sizeof(char));
         if (!(htoi(hash, &n)==8)) {
             printf("did not parse entire hash\n");
             return "NACK";
         }
+        obj_t* o = local_get_object(n); //FIXME: shouldn't always be local
+        buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
         hash[8]=0;
-        sprintf(buffer, "%s:%s:%s", files, hash, local_get_object(n)->name);
+        sprintf(buffer, "%s:%s:%s", files, hash, o->name);
+//        free(files);
         files = buffer;
       }
 
-      buffer = (char*)malloc(sizeof(char)*(8+strlen(obj->bytes)+strlen(outname)+strlen(outsalt)+strlen(files)));
-      sprintf(buffer, "ACK:%s:%s:%s%s", obj->bytes, outname, outsalt, files);
+      buffer = (char*)malloc(sizeof(char)*(8+strlen(obj->bytes)+strlen(outhash)+strlen(files)));
+      sprintf(buffer, "ACK:%s:%08X%s", obj->bytes, obj->hash, files);
       return buffer;
     }
     //TODO: SUCC
+    else if (!strcmp(head, "UPD")) {
+//    UPD:jobhash:stdout:stderr -> ACK -- update job status/results
+
+      char *key = strtok_r(NULL, ":", &save_ptr);
+      char *out = strtok_r(NULL, ":", &save_ptr);
+      char *err = strtok_r(NULL, ":", &save_ptr);
+
+
+      if (err == NULL) return "NACK"; //naïve
+
+      int n;
+      if (!(htoi(key, &n)==8)) {
+          printf("did not parse entire hash\n");
+          return "NACK";
+      }
+
+      if (update_job(n, out, err)) return "NACK";
+      return "ACK";
+    }
     else {
         return "NACK";
     }

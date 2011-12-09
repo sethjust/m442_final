@@ -34,12 +34,12 @@ considered polite).
 The following commands are processed by storage nodes:
   File-related:
     ADD:name:bytes -> ACK:hash -- upload a file
-    BADD:name:salt:bytes -> ACK -- copy a file to a non-primary server
+    BADD:name:salt:complete:bytes -> ACK -- copy a file to a non-primary server
     GET:hash -> ACK:bytes -- get the contents of a file
-    UPD:name:salt:bytes -> ACK -- update file contents
+    UPD:jobhash:stdout:stderr -> ACK -- update job status/results
   Job-related:
-    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
-    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash:inputname}*
+    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
+    GETJ -> ACK:sourcebytes:hash:{:inputhash:inputname}*
   Server-related:
     SADD{:host:port:salt}* -> ACK -- add server records
     GETS -> ACK{:host:port:salt}* -- get a server table
@@ -53,6 +53,7 @@ A word on data representation:
   names are strings
   filenames are names
   bytes are strings (Base64 encodings of binary files)
+  complete is a bit ([0|1])
 Servers will make a best-faith effort to interpret these in a reasonable (i.e.
 human-intuitive) manner.
 

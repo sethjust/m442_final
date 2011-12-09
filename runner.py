@@ -120,7 +120,7 @@ class PyPySandboxedProc(VirtualizedRunnerProc, SimpleIOSandboxedProc):
 
 # Code to interact with the readevalprint example class
 def exec_sandbox(job):
-#  try:
+  try:
     tmpdir = tempfile.mkdtemp()
 
     tmp = open(os.path.join(tmpdir, "file"), 'w')
@@ -139,41 +139,47 @@ def exec_sandbox(job):
       code_log = StringIO()
       sandproc.interact(stdout=code_output, stderr=code_log)
       return code_output.getvalue(), code_log.getvalue()
-#    except Exception, e:
-#      sandproc.kill()
+    except Exception, e:
+      sandproc.kill()
     finally:
       sandproc.kill()
 
     shutil.rmtree(tmpdir)
-#  except Exception, e:
-#    pass
-#  return 'Error, could not evaluate', e
+  except Exception, e:
+    pass
+  return 'Error, could not evaluate', e
 
 ##############################################
 ## ComputeCloud Runner functions start here ##
 ##############################################
 
 class Job(object):
-  def __init__(self, cloud, code, outname, outsalt, inhashes):
+  def __init__(self, cloud, code, outhash, innames):
     self.cloud = cloud
     self.code = code
-    self.outname = outname
-    self.outsalt = outsalt
-    self.files = dict( [ (name, ComputeCloud.FileObject(self.cloud, key)) for (key, name) in [(inhashes[i], inhashes[i+1]) for i in range(0, len(inhashes), 2)] ] )
+    self.outhash = outhash
+    self.files = dict( [ (name, ComputeCloud.FileObject(self.cloud, key)) for (key, name) in [(innames[i], innames[i+1]) for i in range(0, len(innames), 2)] ] )
 
   def get(self, key):
     return self.files[key].get()
 
   def do(self):
-    return exec_sandbox(self)
+    out, err = exec_sandbox(self)
+    self.upload(out, err)
+    return out, err
+
+  def upload(self, out, err):
+#    UPD:jobhash:stdout:stderr -> ACK -- update job status/results
+    if not self.cloud.call("UPD:"+self.outhash+":"+base64.b64encode(out)+":"+base64.b64encode(err)) == "ACK":
+      raise ComputeCloud.ServerError
 
 def get_job(cloud):
-#    GETJ -> ACK:sourcebytes:outputname:outputsalt{:inputhash}*
+#    GETJ -> ACK:sourcebytes:hash:{:inputhash:inputname}*
   res = cloud.call("GETJ")
   res = res.split(':')
   if res[0]!='ACK':
     return None
-  else: return Job(cloud, base64.b64decode(res[1]), res[2], res[3], res[4:])
+  else: return Job(cloud, base64.b64decode(res[1]), res[2], res[3:])
 
 if __name__ == "__main__":
   host = "localhost"
@@ -188,7 +194,11 @@ if __name__ == "__main__":
 
   s = ComputeCloud(host, port)
 
-  out, err = get_job(s).do()
+  j = get_job(s)
+  if j == None:
+    print "No jobs, exiting..."
+    sys.exit(-1)
+  out, err = j.do()
 
   print '=' *10
   print 'OUTPUT\n%s' % out

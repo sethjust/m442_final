@@ -15,7 +15,7 @@ hash_t hash(char *text, int salt)
   return result;
 }
 
-obj_t* Obj(int salt, char* name, char* bytes, char* metadata)
+obj_t* Obj(int salt, char* name, char* bytes, char* metadata, int complete)
 {
   // Pseudo-constructor for objects.
   // Note that inputs are copied to malloced memory, so the input buffers may be reused
@@ -29,6 +29,8 @@ obj_t* Obj(int salt, char* name, char* bytes, char* metadata)
   obj->bytes = strdup(bytes);
 
   obj->hash = hash(obj->name, obj->salt);
+
+  obj->complete = complete;
 
   return obj;
 }

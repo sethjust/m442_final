@@ -42,6 +42,14 @@ class ComputeCloud:
     f = open(path, 'r') #TODO: catch errors
     return self.add_string(name, f.read())
 
+  def add_job(self, name, code, outname, infiles):
+    inhashes = ''.join([":"+f.hash for f in infiles])
+#    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
+    res = s.call("JADD:"+name+":"+base64.b64encode(code)+":"+outname+inhashes)
+    if res[:3] == "ACK":
+      return (ComputeCloud.FileObject(self, res[4:12], name), ComputeCloud.FileObject(self, res[13:], outname))
+    else: return None
+
   class ServerError (Exception):
     pass
   class RecvError (Exception):
@@ -114,5 +122,6 @@ if __name__ == '__main__':
   code = '''print open('/net/test', 'r').read()
 print open('/net/test2', 'r').read()'''
 
-#    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:outputhash -- add a job
-  print s.call("JADD:name:"+base64.b64encode(code)+":testjob:"+f.hash+":"+g.hash)
+  j,o = s.add_job("testjob", code, "testout", [f,g])
+
+  s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o]) #name is funky to use initial determinism to ensure that jobs are executed in the right order

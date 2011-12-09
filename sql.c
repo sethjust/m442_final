@@ -55,6 +55,8 @@ obj_t *local_get_object(hash_t hash)
         /* Get Base64 encoded version of byte content. */
         result = (char *) sqlite3_column_text(p_stmn, 4);
         obj->bytes = strdup(result);
+        /* Get status. */
+        obj->complete = sqlite3_column_int(p_stmn, 5);
     } else {
         file_db_crash();
     }
@@ -85,16 +87,68 @@ hash_t next_object_hash(hash_t hash)
     return next_hash;
 }
 
+obj_t *local_next_job(hash_t hash) {
+    sqlite3_stmt *p_stmn;
+    hash_t next_hash;
+    int retv;
+
+    sqlite3_prepare_v2(db_file, "SELECT hash FROM files WHERE (hash > ?) AND (complete = 0) AND (metadata LIKE 'JOB%') ORDER BY hash ASC", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        next_hash = sqlite3_column_int64(p_stmn, 0);
+    } else if (retv == SQLITE_DONE) {
+        return NULL;
+    } else {
+        node_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return local_get_object(next_hash);
+}
+
 int local_add_object(obj_t *obj)
 {
     sqlite3_stmt *p_stmn;
 
-    sqlite3_prepare_v2(db_file, "INSERT INTO files VALUES (?, ?, ?, ?, ?)", -1, &p_stmn, NULL);
+    sqlite3_prepare_v2(db_file, "INSERT INTO files VALUES (?, ?, ?, ?, ?, ?)", -1, &p_stmn, NULL);
     sqlite3_bind_int64(p_stmn, 1, obj->hash);
     sqlite3_bind_text(p_stmn, 2, obj->name, -1, NULL);
     sqlite3_bind_int(p_stmn, 3, obj->salt);
     sqlite3_bind_text(p_stmn, 4, obj->metadata, -1, NULL);
     sqlite3_bind_text(p_stmn, 5, obj->bytes, -1, NULL);
+    sqlite3_bind_int(p_stmn, 6, obj->complete);
+
+    if (sqlite3_step(p_stmn) != SQLITE_DONE) {
+        file_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return 0;
+}
+
+int local_update_bytes(hash_t hash, char* bytes) {
+    sqlite3_stmt *p_stmn;
+
+    sqlite3_prepare_v2(db_file, "UPDATE files SET bytes = ?, complete = 1 WHERE hash = ? AND complete = 0", -1, &p_stmn, NULL);
+    sqlite3_bind_text(p_stmn, 1, bytes, -1, NULL);
+    sqlite3_bind_int64(p_stmn, 2,hash);
+
+    if (sqlite3_step(p_stmn) != SQLITE_DONE) {
+        file_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return 0;
+}
+
+int local_update_metadata(hash_t hash, char* bytes) {
+    sqlite3_stmt *p_stmn;
+
+    sqlite3_prepare_v2(db_file, "UPDATE files SET metadata = ?, complete = 1 WHERE hash = ? AND complete = 0", -1, &p_stmn, NULL);
+    sqlite3_bind_text(p_stmn, 1, bytes, -1, NULL);
+    sqlite3_bind_int64(p_stmn, 2,hash);
 
     if (sqlite3_step(p_stmn) != SQLITE_DONE) {
         file_db_crash();
@@ -120,7 +174,7 @@ int local_remove_object(hash_t hash)
 
 static void make_file_table(void)
 {
-    char *sql_create_files = "CREATE TABLE files (hash INTEGER PRIMARY KEY, name TEXT, salt INTEGER, metadata TEXT, bytes text)";
+    char *sql_create_files = "CREATE TABLE files (hash INTEGER PRIMARY KEY, name TEXT, salt INTEGER, metadata TEXT, bytes TEXT, complete INTEGER DEFAULT 0)";
     if (sqlite3_exec(db_file, sql_create_files, NULL, NULL, NULL) != SQLITE_OK) {
         file_db_crash();
     }

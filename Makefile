@@ -17,4 +17,4 @@ server: server.c server.h network.o obj.o sql.o
 	$(CC) $(LFLAGS) -o server server.c network.o obj.o sql.o
 
 clean:
-	-rm server obj.o network.o sql.o
+	-rm server obj.o network.o sql.o client.pyc
