@@ -23,11 +23,13 @@ Running the system requires:
     pypy release to run this step. Once the process is over (20-60 mins), run
     "../sandbox/pypy_interact.py ./pypy-c" to test that everything works. If
     so, you should get an interactive python prompt.
-  c. Run ./runner.py host port. At the moment this will run exactly one job
-    fetched from the given server and upload the results.
+  c. Run ./runner.py [<port>|<host> <port>]. At the moment it will repeatedly
+    get jobs from the given server and upload their results, then exit once
+    none are left.
    
 3. Using the client api:
-  -. Currently, running the client.py file as a script will run a test scenario.
+  -. Currently, running the client.py file as a script (i.e. "./client.py
+    [<port>|<host> <port>]") will run a test scenario.
   a. In python, import the client module with
 
       from client import ComputeCloud
