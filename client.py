@@ -131,10 +131,10 @@ if __name__ == '__main__':
   s_width = 80
   s_height = 24
 
-  width = 3
-
-  x = -1
-  y = 0
+  width = .01
+  
+  x = -1.1887204
+  y = -0.3032472
 
   # Ensure values are floats
   width = float(width)
