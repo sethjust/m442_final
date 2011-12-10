@@ -144,7 +144,7 @@ int recv_message(int socket, char** buffer) {
 
   res = htoi(size, &sum); // parse the hex digits
   if (!(res==6)) {
-    printf("only parsed %d hex digits\n", res);
+    printf("only parsed %d hex digits in \"%s\"\n", res, size);
     return -1;
   }
 
@@ -153,7 +153,7 @@ int recv_message(int socket, char** buffer) {
   length = sum >> 8; // drop the two characters off the right hand side
   sum = sum - (length << 8); // leave only the last two in sum
 
-  *buffer = (char*) malloc(length*sizeof(char));
+  *buffer = (char*) malloc((length+2)*sizeof(char));
 
   res = recv_string(socket, *buffer, length);
   if (!(length == res)) {

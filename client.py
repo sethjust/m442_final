@@ -147,9 +147,9 @@ if __name__ == '__main__':
   x_off = (width/2)-x
   y_off = (height/2)-y
 
-#	gradient = ['\033[95m.\033[0m','\033[95m:\033[0m','\033[95mo\033[0m','\033[95mO\033[0m','\033[95m8\033[0m','\033[95m@\033[0m','\033[94m.\033[0m','\033[94m:\033[0m','\033[94mo\033[0m','\033[94mO\033[0m','\033[94m8\033[0m','\033[94m@\033[0m','\033[92m.\033[0m','\033[92m:\033[0m','\033[92mo\033[0m','\033[92mO\033[0m','\033[92m8\033[0m','\033[92m@\033[0m','\033[93m.\033[0m','\033[93m:\033[0m','\033[93mo\033[0m','\033[93mO\033[0m','\033[93m8\033[0m','\033[93m@\033[0m','\033[91m.\033[0m','\033[91m:\033[0m','\033[91mo\033[0m','\033[91mO\033[0m','\033[91m8\033[0m','\033[91m@\033[0m']
   code = '''def symbol(iter, max_iter):
-  gradient = ['.', ':', 'o', 'O', '8', '@']
+#  gradient = ['.', ':', 'o', 'O', '8', '@']
+  gradient = ['\033[95m.\033[0m','\033[95m:\033[0m','\033[95mo\033[0m','\033[95mO\033[0m','\033[95m8\033[0m','\033[95m@\033[0m','\033[94m.\033[0m','\033[94m:\033[0m','\033[94mo\033[0m','\033[94mO\033[0m','\033[94m8\033[0m','\033[94m@\033[0m','\033[92m.\033[0m','\033[92m:\033[0m','\033[92mo\033[0m','\033[92mO\033[0m','\033[92m8\033[0m','\033[92m@\033[0m','\033[93m.\033[0m','\033[93m:\033[0m','\033[93mo\033[0m','\033[93mO\033[0m','\033[93m8\033[0m','\033[93m@\033[0m','\033[91m.\033[0m','\033[91m:\033[0m','\033[91mo\033[0m','\033[91mO\033[0m','\033[91m8\033[0m','\033[91m@\033[0m']
   
   return gradient[int(iter*(len(gradient)-1)/max_iter)]
 
@@ -164,9 +164,11 @@ def mandel(a,max_iter):
 	return symbol(iter,max_iter)
 
 f=open('/net/pts', 'r')
-for line in f.readlines():
-  s = line.stripstrip(lit(',')
-  print mandel(complex(real,comp), 150)
+l=[]
+for pt in f.readlines():
+  s = pt.strip().split(',')
+  l.append(mandel(complex(float(s[0]),float(s[1])), 150))
+print ''.join(l)
 '''
 
   # Initialize a list of outputs
@@ -187,36 +189,8 @@ for line in f.readlines():
     j, k = s.add_job("mandel"+str(i), code, "mandout"+str(i), [f])
     l.append(k)
   
-  input("press enter once runner is done")
+  import os
+  os.system("./runner.py " + HOST + " " + str(PORT))
 
   for f in l:
-    print f.get()
-
-#  f = s.add_string("test", "this is a test file")
-#  g = s.add_string("test2", "this is a test gile")
-#  code = '''print open('/net/test', 'r').read()
-#print open('/net/test2', 'r').read()'''
-#
-#  j,o = s.add_job("testjob", code, "testout", [f,g])
-#
-#  import os, time
-#  os.system("./runner.py " + HOST + " " + str(PORT))
-#  time.sleep(1)
-#
-#  try:
-#    k,p = s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o])
-#    #name is funky to use initial determinism to ensure that jobs are executed in the right order for testing
-#    print "First job was done!"
-#  except s.FileNotReadyError:
-#    print "First job not done, presumably"
-#
-#  os.system("./runner.py " + HOST + " " + str(PORT))
-#
-#  print "== First job had output: =="
-#  print o.get()
-#  print "== And errors: =="
-#  print j.get()
-#  print "== Second job had output: =="
-#  print p.get()
-#  print "== And errors: =="
-#  print k.get()
+    print f.get().strip()

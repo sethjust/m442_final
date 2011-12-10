@@ -174,7 +174,7 @@ char* process_msg(char* message) {
         add(f);
         
 //        For a job: "JOB:outputhash{:inputhash}*\0"
-        metadata = (char*) malloc(13*sizeof(char)+strlen(buffer));
+        metadata = (char*) malloc((14+strlen(buffer))*sizeof(char));
         sprintf(metadata, "JOB:%08X:%s", hash(output, m), buffer);
 
 
@@ -251,7 +251,7 @@ char* process_msg(char* message) {
         buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
         hash[8]=0;
         sprintf(buffer, "%s:%s:%s", files, hash, o->name);
-//        free(files);
+        free(files);
         files = buffer;
       }
 
