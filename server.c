@@ -389,7 +389,9 @@ int main(int argc, char** argv) {
 
 //    conn_listen(connection);
 //    pthread_create(&tid,&a,(void*(*)(void *))conn_listen,(void *)&connection);
-    pthread_create(tid,NULL,(void*(*)(void *))conn_listen,(void *)&connection);
+    int *conn = (int*)malloc(sizeof(int));
+    *conn = connection;
+    pthread_create(tid,NULL,(void*(*)(void *))conn_listen,(void *)conn);
 
 //    close(connection);
   }
