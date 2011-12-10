@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <signal.h>
 //#include <unistd.h>
 
 #include "network.h"
 #include "obj.h"
 #include "sql.h"
+
+#include <signal.h>
 
 #define GETS_SIZE (512)
 
