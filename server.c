@@ -34,37 +34,66 @@ int remote_add(node_t* node, obj_t* obj) { //FIXME
   return 0;
 }
 
-int add(obj_t* obj) { //FIXME
-//  hash_t n = hash(obj->name, obj->salt);
+int add(obj_t* obj) {
+  hash_t n = hash(obj->name, obj->salt);
 
-//  node_t* node = next_node(n);
+  node_t* node = next_node(n);
 
-//  if (is_local(node)) {
+  if (is_local(node)) {
     return local_add(obj);
-//  } else {
-//    return remote_add(node, obj);
-//  }
+  } else {
+    return remote_add(node, obj);
+  }
 }
 
-int update_job(hash_t n, char* out, char* err) { //FIXME: locality
-//        For a job: "JOB:outputhash{:inputhash}*\0"
-  char *save;
-  obj_t* o = local_get_object(n);
-  if (strncmp(o->metadata, "JOB", 3)) return -1;
-
-  char *key = strtok_r(o->metadata, ":", &save);
-  key = strtok_r(NULL, ":", &save);
-
-  int m;
-  htoi(key, &m);
-
-  local_update_bytes(n, err); /* save the stderr output to the job's bytes
-                                 TODO: decide if we really want to overwrite
-                                 the code. atm, this makes for easier gets
-                                 local_update_bytes(m, out); save stdout to the
-                                 outputfile */
-  local_update_bytes(m, out);
+obj_t* remote_get_object(node_t* node, hash_t n) { //FIXME
   return 0;
+}
+
+obj_t* get_object(hash_t n) {
+  node_t* node = next_node(n);
+
+  if (is_local(node)) {
+    return local_get_object(n);
+  } else {
+    return remote_get_object(node, n);
+  }
+}
+
+int remote_update_job(node_t* node, hash_t n, char* out, char* err) { //FIXME
+  return 0;
+}
+
+int update_job(hash_t n, char* out, char* err) {
+  node_t* node = next_node(n);
+
+  if (is_local(node)) {
+    char *save;
+    obj_t* o = local_get_object(n);
+    
+//  For a job: "JOB:outputhash{:inputhash}*\0"
+    if (strncmp(o->metadata, "JOB", 3)) return -1;
+
+    char *key = strtok_r(o->metadata, ":", &save);
+    key = strtok_r(NULL, ":", &save);
+
+    int m;
+    htoi(key, &m);
+
+    local_update_bytes(n, err); /* save the stderr output to the job's bytes
+                                   TODO: decide if we really want to overwrite
+                                   the code. atm, this makes for easier gets
+                                   local_update_bytes(m, out); save stdout to the
+                                   outputfile */
+    local_update_bytes(m, out);
+    return 0;
+  } else {
+    return remote_update_job(node, n, out, err);
+  }
+}
+
+bool file_is_ready(hash_t n) { //FIXME
+  return local_file_is_ready(n);
 }
 
 int salt_counter = 0;
@@ -115,7 +144,7 @@ char* process_msg(char* message) {
 
         obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", 1); // use & increment the salt
 
-        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
+        if (add(obj)) return "NACK"; 
 
         char* buffer = malloc((22) * sizeof(char));
         sprintf(buffer, "ACK:%s", tostr(obj));
@@ -162,7 +191,7 @@ char* process_msg(char* message) {
             printf("did not parse entire hash\n");
             return "NACK";
           }
-          if (!(file_is_ready(n))) { //FIXME: locality
+          if (!(file_is_ready(n))) { 
             printf("file was not ready\n");
             return "NACK";
           }
@@ -180,7 +209,7 @@ char* process_msg(char* message) {
 
         obj_t* obj = Obj(salt_counter++, name, bytes, metadata, 0); // use & increment the salt //TODO: not atomic
 
-        if (local_add(obj)) return "NACK"; /* FIXME: Shouldn't always be local. */
+        if (add(obj)) return "NACK";
 
         buffer = (char*)malloc(22*sizeof(char));
         sprintf(buffer, "ACK:%08X:%08X", obj->hash, hash(output, m));
@@ -203,8 +232,7 @@ char* process_msg(char* message) {
             return "NACK";
         }
 
-        obj = local_get_object(n); /* FIXME: Shouldn't always be local. Also
-                                      should not return objects that are not
+        obj = get_object(n); /* FIXME: Should not return objects that are not
                                       marked as complete.*/
 
         buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
@@ -247,7 +275,7 @@ char* process_msg(char* message) {
             printf("did not parse entire hash\n");
             return "NACK";
         }
-        obj_t* o = local_get_object(n); //FIXME: shouldn't always be local
+        obj_t* o = get_object(n);
         buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
         hash[8]=0;
         sprintf(buffer, "%s:%s:%s", files, hash, o->name);

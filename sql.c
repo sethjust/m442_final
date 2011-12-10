@@ -30,7 +30,7 @@ bool file_hash_exists(hash_t hash)
     return exists;
 }
 
-bool file_is_ready(hash_t hash)
+bool local_file_is_ready(hash_t hash)
 {
     sqlite3_stmt *p_stmn;
     int retv;
