@@ -34,8 +34,10 @@ class ComputeCloud:
 
   def add_string(self, name, string):
     if len(string)==0:
-      raise self.MsgLengthError
-    res = self.call("ADD:"+name+":"+base64.b64encode(string))
+      out = ' '
+    else: 
+      out = base64.b64encode(string)
+    res = self.call("ADD:"+name+":"+out)
     if res[:3] == "ACK":
       return self.FileObject(self, res[4:], name)
     else: return None
@@ -46,7 +48,6 @@ class ComputeCloud:
 
   def add_job(self, name, code, outname, infiles):
     inhashes = ''.join([":"+f.hash for f in infiles])
-#    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
     res = s.call("JADD:"+name+":"+base64.b64encode(code)+":"+outname+inhashes)
     if res[:3] == "ACK":
       return (self.FileObject(self, res[4:12], name), self.FileObject(self, res[13:], outname))

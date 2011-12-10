@@ -171,13 +171,18 @@ class Job(object):
     return out, err
 
   def upload(self, out, err):
-    # we need to ensure that the base64 strings have length, because otherwise
-    # the server chokes
+    # We need to ensure that the base64 strings have length, because otherwise
+    # the server chokes. A single space decodes to an empty string, and it will
+    # make the server happy.
     if len(out) == 0:
       out = ' '
+    else:
+      out = base64.b64encode(out)
     if len(err) == 0:
       err = ' '
-    if not self.cloud.call("UPD:"+self.outhash+":"+base64.b64encode(out)+":"+base64.b64encode(err)) == "ACK":
+    else:
+      err = base64.b64encode(err)
+    if not self.cloud.call("UPD:"+self.outhash+":"+out+":"+err) == "ACK":
       raise ComputeCloud.ServerError
 
 def get_job(cloud):
