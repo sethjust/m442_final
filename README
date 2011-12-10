@@ -29,7 +29,9 @@ Running the system requires:
 3. Using the client api:
   -. Currently, running the client.py file as a script will run a test scenario.
   a. In python, import the client module with
+
       from client import ComputeCloud
+
     Instances of this class will represent all our communications with a cloud
     instance. To create one, initialize it with the hostname and port of a
     server:
@@ -68,18 +70,18 @@ Running the system requires:
 The architecture of the object store (or "cloud") is a network of peer servers
 with some (as yet undecided) way of knowing about its peers. This code
 implements communication between servers via socket connections. Each server
-listens on a socket and sequentially accepts connections (hopefully this will
-become threaded at some point). Each connection is a series of two way
-null-terminated string exchanges of the following format: first the connecting
-peer sends "COMMAND{:data}*" and the server responds with "[ACK|NACK]{:data}*".
-In both cases the data formatting is determined by the command sent.  Each
-string is preceeded by a 6 hexadecimal digits. The first four characters
-indicate the length (in bytes, not including the null terminator) of the
-message to follow (allowing messages up to 65536 bytes), while the final two
-are the sum of all the bytes in the message (modulo 16^2).  All clients should
-send the message "STOP" before closing the socket. (This is technically
-unneccessary, as a zero-length message results from the socket closing, but is
-considered polite).
+listens on a socket and spawns threads for each connection. Synchronization is
+managed by the (threadsafe) sqlite storage database used by each node. Each
+connection is a series of two way null-terminated string exchanges of the
+following format: first the connecting peer sends "COMMAND{:data}*" and the
+server responds with "[ACK|NACK]{:data}*". In both cases the data formatting is
+determined by the command sent.  Each string is preceeded by a 6 hexadecimal
+digits. The first four characters indicate the length (in bytes, not including
+the null terminator) of the message to follow (allowing messages up to 65536
+bytes), while the final two are the sum of all the bytes in the message (modulo
+16^2).  All clients should send the message "STOP" before closing the socket.
+(This is technically unneccessary, as a zero-length message results from the
+socket closing, but is considered polite).
 
 The following commands are processed by storage nodes:
   File-related:

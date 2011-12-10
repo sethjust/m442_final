@@ -20,7 +20,7 @@ class ComputeCloud:
 
   def send_msg(self, msg):
     if len("%x"%(len(msg)))>4:
-      raise self.MsgTooLongError
+      raise self.MsgLengthError
     header = "%04X%02X"%(len(msg),csum(msg))
     self.socket.send(header+msg+"\0")
     return recv(self.socket) #TODO: error handling
@@ -33,6 +33,8 @@ class ComputeCloud:
     return res
 
   def add_string(self, name, string):
+    if len(string)==0:
+      raise self.MsgLengthError
     res = self.call("ADD:"+name+":"+base64.b64encode(string))
     if res[:3] == "ACK":
       return self.FileObject(self, res[4:], name)
@@ -52,7 +54,7 @@ class ComputeCloud:
 
   class FileNotReadyError (Exception):
     pass
-  class MsgTooLongError (Exception):
+  class MsgLengthError (Exception):
     pass
   class ServerError (Exception):
     pass
@@ -65,7 +67,7 @@ class ComputeCloud:
       self.name = name
 
       if self.invalid(key):
-        raise ComputeCloud.FileObject.ParseError
+        raise self.ParseError
       self.hash = key
 
     def __repr__(self):
@@ -133,10 +135,15 @@ print open('/net/test2', 'r').read()'''
   time.sleep(1)
 
   try:
-    s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o])
+    k,p = s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o])
     #name is funky to use initial determinism to ensure that jobs are executed in the right order for testing
     print "First job was done!"
   except s.FileNotReadyError:
     print "First job not done, presumably"
 
   os.system("./runner.py " + HOST + " " + str(PORT))
+
+  print j.get()
+  print o.get()
+  print k.get()
+  print p.get()

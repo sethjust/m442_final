@@ -199,7 +199,9 @@ char* process_msg(char* message) {
             return "NACK";
         }
 
-        obj = local_get_object(n); /* FIXME: Shouldn't always be local. */
+        obj = local_get_object(n); /* FIXME: Shouldn't always be local. Also
+                                      should not return objects that are not
+                                      marked as complete.*/
 
         buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
         sprintf(buffer, "ACK:%s", obj->bytes);
