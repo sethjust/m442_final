@@ -20,7 +20,7 @@ obj_t* Obj(int salt, char* name, char* bytes, char* metadata, int complete)
   // Pseudo-constructor for objects.
   // Note that inputs are copied to malloced memory, so the input buffers may be reused
 
-  obj_t* obj = (obj_t*) malloc(sizeof(obj_t));
+  obj_t* obj = (obj_t*)malloc(sizeof(obj_t));
 
   obj->salt = salt;
 

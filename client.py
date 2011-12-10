@@ -124,27 +124,74 @@ if __name__ == '__main__':
     PORT = int(sys.argv[2])
 
   s = ComputeCloud(HOST, PORT)
-  f = s.add_string("test", "this is a test file")
-  g = s.add_string("test2", "this is a test gile")
-  code = '''print open('/net/test', 'r').read()
-print open('/net/test2', 'r').read()'''
 
-  j,o = s.add_job("testjob", code, "testout", [f,g])
+  # we now use the cloud for an embarassingly parallel computation
 
-  import os, time
+  # Set size of render in rows and columns
+  s_width = 80
+  s_height = 24
+
+  width = 3
+
+  x = -1
+  y = 0
+
+  # Ensure values are floats
+  width = float(width)
+  x = float(x)
+  y = float(y)
+
+  # Caluculate width so that view is square
+  height = s_height*(width/s_width)*2
+
+  # Calculate coordinate offsets
+  x_off = (width/2)-x
+  y_off = (height/2)-y
+
+  code = '''def symbol(iter, max_iter):
+#  gradient = ['.', ':', 'o', 'O', '8', '@']
+  gradient = ['\033[95m.\033[0m','\033[95m:\033[0m','\033[95mo\033[0m','\033[95mO\033[0m','\033[95m8\033[0m','\033[95m@\033[0m','\033[94m.\033[0m','\033[94m:\033[0m','\033[94mo\033[0m','\033[94mO\033[0m','\033[94m8\033[0m','\033[94m@\033[0m','\033[92m.\033[0m','\033[92m:\033[0m','\033[92mo\033[0m','\033[92mO\033[0m','\033[92m8\033[0m','\033[92m@\033[0m','\033[93m.\033[0m','\033[93m:\033[0m','\033[93mo\033[0m','\033[93mO\033[0m','\033[93m8\033[0m','\033[93m@\033[0m','\033[91m.\033[0m','\033[91m:\033[0m','\033[91mo\033[0m','\033[91mO\033[0m','\033[91m8\033[0m','\033[91m@\033[0m']
+  
+  return gradient[int(iter*(len(gradient)-1)/max_iter)]
+
+# Calculates whether a number diverges after max_iter iterations
+def mandel(a,max_iter):
+	z = complex(0)
+	iter = 0
+	while iter < max_iter:
+		iter+=1
+		z = z**2 + a
+		if abs(z) >= 2: break
+	return symbol(iter,max_iter)
+
+f=open('/net/pts', 'r')
+l=[]
+for pt in f.readlines():
+  s = pt.strip().split(',')
+  l.append(mandel(complex(float(s[0]),float(s[1])), 150))
+print ''.join(l)
+'''
+
+  # Initialize a list of outputs
+  l = []
+  # Outer loop iterates over rows
+  for i in range(1, s_height):
+    # Set imaginary value based on the row's number
+    comp = -1*(((i/float(s_height))*height)-y_off)
+    
+    pts = ''
+    # Inner loop iterates across the columns of the row
+    for j in range(1, s_width):
+      # Set the real value based on the column's number
+      real = (((j/float(s_width))*width)-x_off)
+      pts = pts+str(real)+','+str(comp)+'\n'
+    	
+    f = s.add_string("pts", pts)
+    j, k = s.add_job("mandel"+str(i), code, "mandout"+str(i), [f])
+    l.append(k)
+  
+  import os
   os.system("./runner.py " + HOST + " " + str(PORT))
-  time.sleep(1)
 
-  try:
-    k,p = s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o])
-    #name is funky to use initial determinism to ensure that jobs are executed in the right order for testing
-    print "First job was done!"
-  except s.FileNotReadyError:
-    print "First job not done, presumably"
-
-  os.system("./runner.py " + HOST + " " + str(PORT))
-
-  print j.get()
-  print o.get()
-  print k.get()
-  print p.get()
+  for f in l:
+    print f.get().strip()

@@ -206,13 +206,14 @@ if __name__ == "__main__":
 
   s = ComputeCloud(host, port)
 
-  j = get_job(s)
-  if j == None:
-    print "No jobs, exiting..."
-    sys.exit(-1)
-  out, err = j.do()
+  while(1):
+    j = get_job(s)
+    if j == None:
+      print "No jobs, exiting..."
+      sys.exit(-1)
+    out, err = j.do()
 
-  print '=' *10
-  print 'OUTPUT\n%s' % out
-  print '=' *10
-  print 'ERRORS\n%s' % err
+    print '=' *10
+    print 'OUTPUT\n%s' % out
+    print '=' *10
+    print 'ERRORS\n%s' % err

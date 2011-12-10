@@ -34,16 +34,16 @@ int remote_add(node_t* node, obj_t* obj) { //FIXME
   return 0;
 }
 
-int add(obj_t* obj) {
-  hash_t n = hash(obj->name, obj->salt);
+int add(obj_t* obj) { //FIXME
+//  hash_t n = hash(obj->name, obj->salt);
 
-  node_t* node = next_node(n);
+//  node_t* node = next_node(n);
 
-  if (is_local(node)) {
+//  if (is_local(node)) {
     return local_add(obj);
-  } else {
-    return remote_add(node, obj);
-  }
+//  } else {
+//    return remote_add(node, obj);
+//  }
 }
 
 int update_job(hash_t n, char* out, char* err) { //FIXME: locality
@@ -58,8 +58,12 @@ int update_job(hash_t n, char* out, char* err) { //FIXME: locality
   int m;
   htoi(key, &m);
 
-  local_update_metadata(n, err); //save the stderr output to the job's metadata
-  local_update_bytes(m, out); //save stdout to the outputfile
+  local_update_bytes(n, err); /* save the stderr output to the job's bytes
+                                 TODO: decide if we really want to overwrite
+                                 the code. atm, this makes for easier gets
+                                 local_update_bytes(m, out); save stdout to the
+                                 outputfile */
+  local_update_bytes(m, out);
   return 0;
 }
 
@@ -118,11 +122,11 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "BADD")) {
-        int n;
+        char* n;
 
         char *name = strtok_r(NULL, ":", &save_ptr);
         char *salt = strtok_r(NULL, ":", &save_ptr);
-        bool complete = ((n = strtok_r(NULL, ":", &save_ptr))=='0')?0:1;
+        bool complete = *(n = strtok_r(NULL, ":", &save_ptr))=='0';
         char *bytes = strtok_r(NULL, ":", &save_ptr);
 
         if (bytes == NULL) return "NACK";
@@ -133,7 +137,7 @@ char* process_msg(char* message) {
 
         char* buffer = malloc((22) * sizeof(char));
         sprintf(buffer, "ACK:%s", tostr(obj));
-        free_obj(obj);
+//        free_obj(obj);
         return buffer;
     }
     else if (!strcmp(head, "JADD")) {
@@ -170,7 +174,7 @@ char* process_msg(char* message) {
         add(f);
         
 //        For a job: "JOB:outputhash{:inputhash}*\0"
-        metadata = (char*) malloc(13*sizeof(char)+strlen(buffer));
+        metadata = (char*) malloc((14+strlen(buffer))*sizeof(char));
         sprintf(metadata, "JOB:%08X:%s", hash(output, m), buffer);
 
 
@@ -247,7 +251,7 @@ char* process_msg(char* message) {
         buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
         hash[8]=0;
         sprintf(buffer, "%s:%s:%s", files, hash, o->name);
-//        free(files);
+        free(files);
         files = buffer;
       }
 
@@ -379,12 +383,13 @@ int main(int argc, char** argv) {
       return result;
     }
 
-    pthread_t tid;
-    pthread_attr_t a;
-    pthread_attr_init(&a);
+    pthread_t *tid = (pthread_t*)malloc(sizeof(pthread_t));
+//    pthread_attr_t a;
+//    pthread_attr_init(&a);
 
 //    conn_listen(connection);
-    pthread_create(&tid,&a,(void*(*)(void *))conn_listen,(void *)&connection);
+//    pthread_create(&tid,&a,(void*(*)(void *))conn_listen,(void *)&connection);
+    pthread_create(tid,NULL,(void*(*)(void *))conn_listen,(void *)&connection);
 
 //    close(connection);
   }
