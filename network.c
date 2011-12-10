@@ -200,15 +200,15 @@ int csum(const char* msg) {
   }
 }
 
-void conn_listen(int socket) {
+void conn_listen(int *socket) {
   char *buffer, *resp;
   int res;
   // repeatedly respond to lines sent by the client
   do {
     // receive a string from this client's connection socket
-    res = recv_message(socket, &buffer);
+    res = recv_message(*socket, &buffer);
     if (res < 0) {
-      send_string(socket, "NACK");
+      send_string(*socket, "NACK");
       continue;
     }
 
@@ -217,8 +217,9 @@ void conn_listen(int socket) {
 //    printf("Client says \"%s\".\nResponding \"%s\"\n", buffer, resp);
     printf("Responding \"%s\"\n", resp);
 
-    send_message(socket, resp); // Note that process_msg() may have side effects.
+    send_message(*socket, resp); // Note that process_msg() may have side effects.
   } while (res > 0 && strcmp(buffer,"STOP"));
+  close(*socket);
 }
 
 char *get_self_ip(void)

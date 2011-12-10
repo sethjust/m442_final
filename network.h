@@ -26,7 +26,7 @@ int send_message(int socket, char* message);
 int recv_message(int socket, char** buffer);
 int htoi (const char *ptr, int *result);
 int csum(const char* msg);
-void conn_listen(int socket);
+void conn_listen(int* socket);
 char *get_self_ip(void);
 
 #endif
