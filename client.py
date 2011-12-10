@@ -15,12 +15,12 @@ class ComputeCloud:
 
   def close(self):
     if (self.send_msg("STOP") != "ACK"):
-      raise ComputeCloud.ServerError
+      raise self.ServerError
     self.socket.close()
 
   def send_msg(self, msg):
     if len("%x"%(len(msg)))>4:
-      raise ComputeCloud.MsgTooLongError
+      raise self.MsgTooLongError
     header = "%04X%02X"%(len(msg),csum(msg))
     self.socket.send(header+msg+"\0")
     return recv(self.socket) #TODO: error handling
@@ -35,7 +35,7 @@ class ComputeCloud:
   def add_string(self, name, string):
     res = self.call("ADD:"+name+":"+base64.b64encode(string))
     if res[:3] == "ACK":
-      return ComputeCloud.FileObject(self, res[4:], name)
+      return self.FileObject(self, res[4:], name)
     else: return None
 
   def add_file(self, name, path):
@@ -47,9 +47,13 @@ class ComputeCloud:
 #    JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
     res = s.call("JADD:"+name+":"+base64.b64encode(code)+":"+outname+inhashes)
     if res[:3] == "ACK":
-      return (ComputeCloud.FileObject(self, res[4:12], name), ComputeCloud.FileObject(self, res[13:], outname))
-    else: return None
+      return (self.FileObject(self, res[4:12], name), self.FileObject(self, res[13:], outname))
+    else: raise self.FileNotReadyError
 
+  class FileNotReadyError (Exception):
+    pass
+  class MsgTooLongError (Exception):
+    pass
   class ServerError (Exception):
     pass
   class RecvError (Exception):
@@ -124,4 +128,15 @@ print open('/net/test2', 'r').read()'''
 
   j,o = s.add_job("testjob", code, "testout", [f,g])
 
-  s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o]) #name is funky to use initial determinism to ensure that jobs are executed in the right order
+  import os, time
+  os.system("./runner.py " + HOST + " " + str(PORT))
+  time.sleep(1)
+
+  try:
+    s.add_job("testjob211", 'print open("/net/testout", "r").read()', "testout2", [o])
+    #name is funky to use initial determinism to ensure that jobs are executed in the right order for testing
+    print "First job was done!"
+  except s.FileNotReadyError:
+    print "First job not done, presumably"
+
+  os.system("./runner.py " + HOST + " " + str(PORT))

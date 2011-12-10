@@ -30,6 +30,29 @@ bool file_hash_exists(hash_t hash)
     return exists;
 }
 
+bool file_is_ready(hash_t hash)
+{
+    sqlite3_stmt *p_stmn;
+    int retv;
+    bool exists;
+
+    sqlite3_prepare_v2(db_file, "SELECT hash FROM files WHERE (hash = ?) AND (complete = 1)", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        exists = true;
+    } else if (retv == SQLITE_DONE) {
+        exists = false;
+    } else {
+        file_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return exists;
+
+}
+
 obj_t *local_get_object(hash_t hash)
 {
     sqlite3_stmt *p_stmn;

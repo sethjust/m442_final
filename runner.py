@@ -43,14 +43,16 @@ class VirtualizedRunnerProc(VirtualizedSandboxedProc):
 
   def get_node(self, vpath):
     if vpath[:5] == '/net/': #network object; special handling
-      print "getting file", vpath[5:]
+      if self.debug:
+        print "getting file", vpath[5:]
       return File(self.job.get(vpath[5:]))
     dirnode, name = self.translate_path(vpath)
     if name:
       node = dirnode.join(name)
     else:
       node = dirnode
-    log.vpath('%r => %r' % (vpath, node))
+    if self.debug:
+      log.vpath('%r => %r' % (vpath, node))
     return node
 
   def do_ll_os__ll_os_fstat(self, fd):
@@ -79,7 +81,7 @@ class VirtualizedRunnerProc(VirtualizedSandboxedProc):
 # This class is from the readevalprint example, but the first parent class is
 # one we write, so we can hijack some calls
 class PyPySandboxedProc(VirtualizedRunnerProc, SimpleIOSandboxedProc): 
-  debug = True
+  debug = False
   argv0 = '/bin/pypy-c'
   virtual_cwd = '/tmp'
   virtual_env = {}
@@ -130,7 +132,7 @@ def exec_sandbox(job):
     sandproc = PyPySandboxedProc(
         job,
         SANDBOX_BIN,
-        ['-c', job.code,'--timeout',str(TIMEOUT),],
+        ['-S', '-c', job.code,],
         #['/tmp/script.py','--timeout',str(TIMEOUT),],
         tmpdir # this is dir we just made that will become /tmp in the sandbox
         )
@@ -169,7 +171,12 @@ class Job(object):
     return out, err
 
   def upload(self, out, err):
-#    UPD:jobhash:stdout:stderr -> ACK -- update job status/results
+    # we need to ensure that the base64 strings have length, because otherwise
+    # the server chokes
+    if len(out) == 0:
+      out = ' '
+    if len(err) == 0:
+      err = ' '
     if not self.cloud.call("UPD:"+self.outhash+":"+base64.b64encode(out)+":"+base64.b64encode(err)) == "ACK":
       raise ComputeCloud.ServerError
 

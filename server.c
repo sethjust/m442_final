@@ -149,27 +149,30 @@ char* process_msg(char* message) {
           return "NACK";
         }
 
+        buffer = strdup(save_ptr);
+
+        int n;
+        while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
+          result = htoi(input, &n);
+          if (!(result == 8)) {
+            printf("did not parse entire hash\n");
+            return "NACK";
+          }
+          if (!(file_is_ready(n))) { //FIXME: locality
+            printf("file was not ready\n");
+            return "NACK";
+          }
+        }
+
         // create empty file
         int m = salt_counter++; // use & increment the salt
         obj_t* f = Obj(m, output, "", "FILE", 0);
         add(f);
         
 //        For a job: "JOB:outputhash{:inputhash}*\0"
-        metadata = (char*) malloc(13*sizeof(char)+strlen(save_ptr));
-        sprintf(metadata, "JOB:%08X:%s", hash(output, m), save_ptr);
+        metadata = (char*) malloc(13*sizeof(char)+strlen(buffer));
+        sprintf(metadata, "JOB:%08X:%s", hash(output, m), buffer);
 
-//        int n;
-//        while ((input = strtok_r(NULL, ":", &save_ptr)) != NULL) {
-//          result = htoi(input, &n);
-//          if (!(result == 8)) {
-//            printf("did not parse entire hash\n");
-//            return "NACK";
-//          }
-//          if (!(file_hash_exists(n))) { //FIXME: locality
-//            printf("hash was not valid\n");
-//            return "NACK";
-//          }
-//        }
 
         obj_t* obj = Obj(salt_counter++, name, bytes, metadata, 0); // use & increment the salt //TODO: not atomic
 
@@ -258,8 +261,10 @@ char* process_msg(char* message) {
       char *out = strtok_r(NULL, ":", &save_ptr);
       char *err = strtok_r(NULL, ":", &save_ptr);
 
-
-      if (err == NULL) return "NACK"; //naïve
+      if (err == NULL) {
+          printf("did not get enough tokens\n");
+          return "NACK"; //naïve
+      }
 
       int n;
       if (!(htoi(key, &n)==8)) {
@@ -267,7 +272,10 @@ char* process_msg(char* message) {
           return "NACK";
       }
 
-      if (update_job(n, out, err)) return "NACK";
+      if (update_job(n, out, err)) {
+          printf("failed to update job\n");
+          return "NACK"; 
+      }
       return "ACK";
     }
     else {
