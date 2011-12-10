@@ -324,12 +324,11 @@ static void pop_and_gets(queue_t *queue)
 }
 
 
-int listener, connection;//This will need to change for threading
+int listener;//This will need to change for threading
 // Handle Ctrl-C to close sockets
 void  INThandler(int sig)
 {
   signal(sig, SIG_IGN); // Ignore Ctrl-C for the moment
-  close(connection);
   close(listener);
 
   exit(0);
@@ -348,7 +347,7 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  int result;
+  int result, connection;
 
   if (argc < 2) {
     my_port = 11111;
@@ -384,9 +383,15 @@ int main(int argc, char** argv) {
       return result;
     }
 
-    conn_listen(connection);
+    pthread_t *tid = (pthread_t*)malloc(sizeof(pthread_t));
+//    pthread_attr_t a;
+//    pthread_attr_init(&a);
 
-    close(connection);
+//    conn_listen(connection);
+//    pthread_create(&tid,&a,(void*(*)(void *))conn_listen,(void *)&connection);
+    pthread_create(tid,NULL,(void*(*)(void *))conn_listen,(void *)&connection);
+
+//    close(connection);
   }
 
   return 0;
