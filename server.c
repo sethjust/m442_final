@@ -6,6 +6,7 @@ static void add_node_self_first(int count);
 static void add_node_self(int count);
 static void pop_and_gets(queue_t *queue);
 static int process_gets_response(char *buffer);
+static void send_sadds(void);
 
 sqlite3 *db_file;
 sqlite3 *db_node;
@@ -409,6 +410,7 @@ int main(int argc, char** argv) {
       return -1;
     }
     add_node_self(3);
+    send_sadds();
   } else {
     add_node_self_first(3);
   }
@@ -513,4 +515,24 @@ static int process_gets_response(char *buffer)
         return -1;
     }
     return 0;
+}
+
+static void send_sadds(void)
+{
+    char *message = malloc(sizeof(*message) * 512);
+    char *temp = malloc(sizeof(*message) * 30);
+    message[0] = '\0';
+    strcat(message, "SADD");
+
+    hash_t hash = 0;
+    hash_t next_hash;
+    while ((next_hash = next_local_hash(hash)) != hash) {
+        node_t *node = local_get_node(next_hash);
+        temp[0] = '\0';
+        sprintf(temp, ":%s:%d:%d", node->address, node->port, node->salt);
+        strcat(message, temp);
+        free_node(node);
+        hash = next_hash;
+    }
+    free(temp);
 }
