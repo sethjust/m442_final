@@ -7,6 +7,7 @@ static void add_node_self(int count);
 static void pop_and_gets(queue_t *queue);
 static int process_gets_response(char *buffer);
 static void send_sadds(void);
+static void send_sadd(node_t *server);
 
 sqlite3 *db_file;
 sqlite3 *db_node;
@@ -359,7 +360,6 @@ char* message_node(node_t* node, char* msg)
     if (!strcmp(buffer, "NACK")) printf("STOP got NACK!\n");
 
     close(connection);
-    
     return resp;
 }
 
@@ -548,4 +548,12 @@ static void send_sadds(void)
         hash = next_hash;
     }
     free(temp);
+
+    hash = 0;
+    while ((next_hash = next_remote_hash(hash)) != hash) {
+        node_t *node = local_get_node(next_hash);
+        char *response = message_node(node, message);
+        hash = next_hash;
+    }
+    free(message);
 }
