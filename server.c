@@ -2,8 +2,10 @@
 
 // FUNCTIONS
 
+static void add_node_self_first(int count);
 static void add_node_self(int count);
 static void pop_and_gets(queue_t *queue);
+static int process_gets_response(char *buffer);
 
 sqlite3 *db_file;
 sqlite3 *db_node;
@@ -125,9 +127,6 @@ char* process_msg(char* message) {
             if (!node_hash_exists(node->hash)) {
                 printf("adding %s:%d:%s\n", host, atoi(port), salt);
                 local_add_node(node);
-                if (my_queue != NULL) {
-                    push_queue(my_queue, node);
-                }
             }
 
             free_node(node);
@@ -342,6 +341,7 @@ static void pop_and_gets(queue_t *queue)
 
     send_message(connection, "GETS");
     recv_message(connection, &buffer);
+    process_gets_response(buffer);
     printf("%s\n", buffer);
 
     send_message(connection, "STOP");
@@ -400,8 +400,10 @@ int main(int argc, char** argv) {
       printf("failed to init server table (%s)\n", strerror(errno));
       return -1;
     }
+    add_node_self(3);
+  } else {
+    add_node_self_first(3);
   }
-  add_node_self(3); /* FIXME: Test. */
 
   while (1) {
     // The (currently unthreaded) main loop waits for a connection, and then processes a series of messages
@@ -427,7 +429,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-static void add_node_self(int count)
+static void add_node_self_first(int count)
 {
     int i;
     for (i = 0; i < count; i++) {
@@ -436,4 +438,71 @@ static void add_node_self(int count)
         local_add_node(node);
         free_node(node);
     }
+}
+
+static void add_node_self(int count)
+{
+    int j;
+    int i = 0;
+    node_t *node = Node(0, my_ip, my_port);
+    node->type = LOCAL;
+    local_add_node(node);
+
+    for (j = 1; j < count; j++) {
+        while (true) {
+            node = Node(++i, my_ip, my_port);
+            node->type = LOCAL;
+
+            hash_t hash1 = next_node_loop(node->hash);
+            hash_t hash2 = next_node_loop(hash1);
+            node_t *node1 = local_get_node(hash1);
+            node_t *node2 = local_get_node(hash2);
+            if (node1->type == LOCAL || node2->type == LOCAL) {
+                free_node(node1);
+                free_node(node2);
+                free_node(node);
+                continue;
+            } else {
+                free_node(node1);
+                free_node(node2);
+                local_add_node(node);
+                free_node(node);
+                break;
+            }
+        }
+    }
+}
+
+static int process_gets_response(char *buffer)
+{
+    char *save_ptr;
+    char *head = strtok_r(buffer, ":", &save_ptr);
+    if (!strcmp(head, "ACK")) {
+        int result;
+        char *host, *port, *salt;
+
+        while ((host = strtok_r(NULL, ":", &save_ptr)) != NULL) {
+            port = strtok_r(NULL, ":", &save_ptr);
+            salt = strtok_r(NULL, ":", &save_ptr);
+
+            if (salt == NULL) return -1;  // if we get three tokens, we're
+                                          // (naïvely) good
+            htoi(salt, &result);
+            node_t *node = Node(result, host, atoi(port));
+            node->type = REMOTE;
+
+            if (!node_hash_exists(node->hash)) {
+                printf("adding %s:%d:%s\n", host, atoi(port), salt);
+                local_add_node(node);
+                if (my_queue != NULL) {
+                    push_queue(my_queue, node);
+                }
+            }
+
+            free_node(node);
+        }
+    } else {
+        return -1;
+    }
+    return 0;
 }

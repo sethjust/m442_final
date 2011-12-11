@@ -29,5 +29,6 @@ node_t *local_get_node(hash_t hash);
 int local_add_node(node_t *node);
 int local_remove_node(hash_t hash);
 hash_t next_node_hash(hash_t hash);
+hash_t next_node_loop(hash_t hash);
 
 #endif

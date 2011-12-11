@@ -313,6 +313,15 @@ hash_t next_node_hash(hash_t hash)
     return next_hash;
 }
 
+hash_t next_node_loop(hash_t hash)
+{
+    if (next_node_hash(hash) == hash) {
+        return next_node_hash(0);
+    } else {
+        return next_node_hash(hash);
+    }
+}
+
 static void make_node_table(void)
 {
     char *sql_create_nodes = "CREATE TABLE nodes (hash INTEGER PRIMARY KEY, address TEXT, port INTEGER, salt INTEGER, type INTEGER)";
