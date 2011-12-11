@@ -150,23 +150,22 @@ char* process_msg(char* message) {
         return buffer;
     }
     else if (!strcmp(head, "BADD")) {
-        char* n;
-
         char *name = strtok_r(NULL, ":", &save_ptr);
         char *salt = strtok_r(NULL, ":", &save_ptr);
-        bool complete = *(n = strtok_r(NULL, ":", &save_ptr))=='0';
+        bool complete = *(strtok_r(NULL, ":", &save_ptr))=='0';
         char *bytes = strtok_r(NULL, ":", &save_ptr);
+
+        int n;
+        if  (8 != htoi(salt, &n)) return "NACK";
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", complete); // use & increment the salt
+        obj_t* obj = Obj(n , name, bytes, "FILE", complete);
 
         if (local_add(obj)) return "NACK";
 
-        char* buffer = malloc((22) * sizeof(char));
-        sprintf(buffer, "ACK:%s", tostr(obj));
-//        free_obj(obj);
-        return buffer;
+        free_obj(obj);
+        return "ACK";
     }
     else if (!strcmp(head, "JADD")) {
         int result;
