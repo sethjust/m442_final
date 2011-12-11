@@ -101,7 +101,7 @@ bool file_is_ready(hash_t n) { //FIXME
 int salt_counter = 0;
 
 queue_t *my_queue = NULL;
-char* process_msg(char* message) {
+char* process_msg(char *message) {
   printf("got message %s\n", message);
 
     char *save_ptr;
@@ -325,29 +325,38 @@ int init_server_table(char* server, int port) {
     my_queue = NULL;
 }
 
-static void pop_and_gets(queue_t *queue)
+static char* message_node(node_t* node, char* msg)
 {
-    char* buffer;
+    char *resp, *buffer;
     int res;
     int connection;
-
-    node_t *node = pop_queue(queue);
 
     printf("connecting to %s:%d\n", node->address, node->port);
     /* Open a connection to our given server. */
     res = make_connection_with(node->address, node->port, &connection);
     if (res<0) return;
 
-    send_message(connection, "GETS");
-    recv_message(connection, &buffer);
-    process_gets_response(buffer);
-    printf("%s\n", buffer);
+    send_message(connection, msg);
+    recv_message(connection, &resp);
 
     send_message(connection, "STOP");
     recv_message(connection, &buffer);
-    printf("%s\n", buffer);
+
+    if (!strcmp(buffer, "NACK")) printf("STOP got NACK!\n");
 
     close(connection);
+    
+    return resp;
+}
+
+static void pop_and_gets(queue_t *queue)
+{
+    char* buffer;
+
+    node_t *node = pop_queue(queue);
+    buffer = message_node(node, "GETS");
+    printf("%s\n", buffer);
+    process_gets_response(buffer);
 }
 
 

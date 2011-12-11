@@ -25,6 +25,7 @@ int remote_update_job(node_t* node, hash_t n, char* out, char* err);
 int update_job(hash_t n, char* out, char* err);
 bool file_is_ready(hash_t n);
 int init_server_table(char* server, int port);
+static char* message_node(node_t* node, char* msg);
 char* process_msg(char *message);
 
 #endif
