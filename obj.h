@@ -46,6 +46,7 @@ hash_t hash(char *text, int salt);
 obj_t *Obj(int salt, char *name, char *bytes, char *metadata, int complete);
 void free_obj(obj_t *obj);
 char *tostr(obj_t* obj);
+char *addstr(obj_t* obj);
 
 node_t *Node(int salt, char *address, int port);
 void free_node(node_t *node);

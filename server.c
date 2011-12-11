@@ -34,6 +34,8 @@ int local_add(obj_t* obj) {
 
 int remote_add(node_t* node, obj_t* obj) { //FIXME
   printf("adding %s to remote server\n", tostr(obj));
+  char* buffer = message_node(node, addstr(obj));
+  if (strcmp(buffer, "ACK")) return -1;
   return 0;
 }
 
@@ -49,18 +51,15 @@ int add(obj_t* obj) {
   }
 }
 
-obj_t* remote_get_object(node_t* node, hash_t n) { //FIXME
-  return 0;
+char* remote_get_bytes(node_t* node, hash_t n) {
+  char* request = malloc(13*sizeof(char));
+
+  sprintf(request, "GET:%08X", n);
+  return message_node(node, request);
 }
 
 obj_t* get_object(hash_t n) {
-  node_t* node = next_node(n);
-
-  if (is_local(node)) {
-    return local_get_object(n);
-  } else {
-    return remote_get_object(node, n);
-  }
+  return local_get_object(n);
 }
 
 int remote_update_job(node_t* node, hash_t n, char* out, char* err) { //FIXME
@@ -95,8 +94,16 @@ int update_job(hash_t n, char* out, char* err) {
   }
 }
 
-bool file_is_ready(hash_t n) { //FIXME
-  return local_file_is_ready(n);
+bool file_is_ready(hash_t n) { 
+  node_t* node = next_node(n);
+
+  if (is_local(node)) {
+    return local_file_is_ready(n);
+  } else {
+//    obj_t* obj = remote_get_object(node, n);
+//    return obj->complete;
+    return true; //FIXME
+  }
 }
 
 int salt_counter = 0;
@@ -231,13 +238,19 @@ char* process_msg(char *message) {
             return "NACK";
         }
 
-        obj = get_object(n); /* FIXME: Should not return objects that are not
-                                      marked as complete.*/
+        node_t* node = next_node(n);
 
-        buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
-        sprintf(buffer, "ACK:%s", obj->bytes);
+        if (is_local(node)) {
+          obj = get_object(n); /* FIXME: Should not return objects that are not
+                                        marked as complete.*/
 
-        return buffer;
+          buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
+          sprintf(buffer, "ACK:%s", obj->bytes);
+
+          return buffer;
+        } else {
+          return remote_get_bytes(node, n);
+        }
     }
     else if (!strcmp(head, "GETS")) {
         printf("got gets\n");
