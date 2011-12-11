@@ -326,7 +326,7 @@ int init_server_table(char* server, int port) {
     my_queue = NULL;
 }
 
-static char* message_node(node_t* node, char* msg)
+char* message_node(node_t* node, char* msg)
 {
     char *resp, *buffer;
     int res;
