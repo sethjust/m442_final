@@ -175,6 +175,7 @@ print ''.join(l)
   l = []
   # Outer loop iterates over rows
   for i in range(1, s_height):
+#  for i in range(1,2):
     # Set imaginary value based on the row's number
     comp = -1*(((i/float(s_height))*height)-y_off)
     

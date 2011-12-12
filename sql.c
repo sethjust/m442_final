@@ -30,7 +30,7 @@ bool file_hash_exists(hash_t hash)
     return exists;
 }
 
-bool local_file_is_ready(hash_t hash)
+bool local_file_is_complete(hash_t hash)
 {
     sqlite3_stmt *p_stmn;
     int retv;
@@ -64,6 +64,44 @@ obj_t *local_get_object(hash_t hash)
     obj->hash = hash;
 
     sqlite3_prepare_v2(db_file, "SELECT * FROM files WHERE (hash = ?)", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    int retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        /* Get name. */
+        char *result = (char *) sqlite3_column_text(p_stmn, 1);
+        obj->name = strdup(result);
+        /* Get salt. */
+        obj->salt = sqlite3_column_int(p_stmn, 2);
+        /* Get metadata. */
+        result = (char *) sqlite3_column_text(p_stmn, 3);
+        obj->metadata = strdup(result);
+        /* Get Base64 encoded version of byte content. */
+        result = (char *) sqlite3_column_text(p_stmn, 4);
+        obj->bytes = strdup(result);
+        /* Get status. */
+        obj->complete = sqlite3_column_int(p_stmn, 5);
+    } else if (retv == SQLITE_DONE) {
+        return NULL;
+    } else {
+        file_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return obj;
+}
+
+obj_t *get_complete_object(hash_t hash)
+{
+    sqlite3_stmt *p_stmn;
+
+    /* Create new object. */
+    obj_t *obj = malloc(sizeof(*obj));
+
+    /* Set hash. */
+    obj->hash = hash;
+
+    sqlite3_prepare_v2(db_file, "SELECT * FROM files WHERE (hash = ?) AND (complete = 1)", -1, &p_stmn, NULL);
     sqlite3_bind_int64(p_stmn, 1, hash);
 
     int retv = sqlite3_step(p_stmn);
@@ -147,7 +185,9 @@ int local_add_object(obj_t *obj)
     sqlite3_bind_int(p_stmn, 6, obj->complete);
 
     if (sqlite3_step(p_stmn) != SQLITE_DONE) {
-        file_db_crash();
+//        file_db_crash();
+        printf("insert failed\n");
+        return -1;
     }
 
     sqlite3_finalize(p_stmn);
@@ -166,7 +206,8 @@ int local_update_bytes(hash_t hash, char* bytes) {
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+
+    return !sqlite3_changes(db_file);
 }
 
 int local_update_metadata(hash_t hash, char* bytes) {
@@ -283,6 +324,8 @@ node_t *local_get_node(hash_t hash)
         node->salt = sqlite3_column_int(p_stmn, 3);
         /* Get type. */
         node->type = sqlite3_column_int(p_stmn, 4);
+    } else if (sqlite3_step(p_stmn) != SQLITE_DONE) {
+        return NULL;
     } else {
         node_db_crash();
     }

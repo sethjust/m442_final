@@ -55,8 +55,8 @@ char* tostr(obj_t* obj) // representation of obj in response to ADD
 
 char *addstr(obj_t* obj) { // add command for other servers
 //    BADD:name:salt:complete:bytes -> ACK -- copy a file to a non-primary server
-  char* buffer = malloc(sizeof(char)*(19+strlen(obj->name)+strlen(obj->bytes)));
-  sprintf(buffer, "BADD:%s:%08X:%1d:%s", obj->name, obj->salt, obj->complete, obj->bytes);
+  char* buffer = malloc(sizeof(char)*(20+strlen(obj->name)+strlen(obj->bytes)+strlen(obj->metadata)));
+  sprintf(buffer, "BADD:%s:%08X:%1d:%s:%s", obj->name, obj->salt, obj->complete, obj->metadata, obj->bytes);
   return buffer;
 }
 

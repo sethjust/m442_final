@@ -59,47 +59,60 @@ char* remote_get_bytes(node_t* node, hash_t n) {
   return message_node(node, request);
 }
 
-obj_t* get_object(hash_t n) {
-  return local_get_object(n);
+int remote_update_obj(node_t* node, hash_t n, char* out, char* err) { //FIXME
+//    UPD:hash:stdout[:stderr] -> ACK -- update job status/results
+  char* request = malloc(sizeof(char)*(15+strlen(out)+strlen(err)));
+  sprintf(request, "UPD:%08X:%s:%s", n, out, err);
+  return strcmp(message_node(node, request), "ACK");
 }
 
-int remote_update_job(node_t* node, hash_t n, char* out, char* err) { //FIXME
-  return 0;
-}
-
-int update_job(hash_t n, char* out, char* err) {
+int update_obj(hash_t n, char* out, char* err) {
   node_t* node = next_node(n);
 
   if (is_local(node)) {
     char *save;
     obj_t* o = local_get_object(n);
     
-//  For a job: "JOB:outputhash{:inputhash}*\0"
-    if (strncmp(o->metadata, "JOB", 3)) return -1;
+//  For a job: "JOB;outputhash{;inputhash}*\0"
+    if (strncmp(o->metadata, "JOB", 3)) {
+      // We have a file
+      return local_update_bytes(n, out);
+    }
 
-    char *key = strtok_r(o->metadata, ":", &save);
-    key = strtok_r(NULL, ":", &save);
+    char *key = strtok_r(o->metadata, ";", &save);
+    key = strtok_r(NULL, ";", &save);
 
     int m;
     htoi(key, &m);
 
-    local_update_bytes(n, err); /* save the stderr output to the job's bytes
-                                   TODO: decide if we really want to overwrite
-                                   the code. atm, this makes for easier gets
-                                   local_update_bytes(m, out); save stdout to the
-                                   outputfile */
-    local_update_bytes(m, out);
-    return 0;
+ /* save the stderr output to the job's bytes TODO: decide if we really want to
+  * overwrite the code. atm, this makes for easier gets*/
+    if (local_update_bytes(n, err)) {
+      return -1;
+    }
+
+    node = next_node(m);
+    if (is_local(node)) {
+      m = local_update_bytes(m, out);
+    } else {
+      m = remote_update_obj(node, m, out, " ");
+    }
+    if (m) {
+      printf("updated job but not output!");
+      return -1;
+    } else {
+      return 0;
+    }
   } else {
-    return remote_update_job(node, n, out, err);
+    return remote_update_obj(node, n, out, err);
   }
 }
 
-bool file_is_ready(hash_t n) { 
+bool file_is_complete(hash_t n) { 
   node_t* node = next_node(n);
 
   if (is_local(node)) {
-    return local_file_is_ready(n);
+    return local_file_is_complete(n);
   } else {
 //    obj_t* obj = remote_get_object(node, n);
 //    return obj->complete;
@@ -161,17 +174,24 @@ char* process_msg(char *message) {
     else if (!strcmp(head, "BADD")) {
         char *name = strtok_r(NULL, ":", &save_ptr);
         char *salt = strtok_r(NULL, ":", &save_ptr);
-        bool complete = *(strtok_r(NULL, ":", &save_ptr))=='0';
+        bool complete = *(strtok_r(NULL, ":", &save_ptr)) - '0';
+        char *metadata = strtok_r(NULL, ":", &save_ptr);
         char *bytes = strtok_r(NULL, ":", &save_ptr);
 
         int n;
         if  (8 != htoi(salt, &n)) return "NACK";
 
-        if (bytes == NULL) return "NACK";
+        if (bytes == NULL) {
+          bytes = malloc(1*sizeof(char));
+          *bytes = 0;
+        }
 
-        obj_t* obj = Obj(n , name, bytes, "FILE", complete);
+        obj_t* obj = Obj(n, name, bytes, metadata, complete);
 
         if (local_add(obj)) return "NACK";
+
+        obj = local_get_object(obj->hash);
+//        printf("obj->complete == %1d", obj->complete);
 
         free_obj(obj);
         return "ACK";
@@ -198,9 +218,15 @@ char* process_msg(char *message) {
             printf("did not parse entire hash\n");
             return "NACK";
           }
-          if (!(file_is_ready(n))) { 
-            printf("file was not ready\n");
+          if (!(file_is_complete(n))) { 
+            printf("file was not complete\n");
             return "NACK";
+          }
+        }
+
+        for (input = buffer; *input != 0; input++) {
+          if (*input == ':') {
+            *input = ';';
           }
         }
 
@@ -209,9 +235,9 @@ char* process_msg(char *message) {
         obj_t* f = Obj(m, output, "", "FILE", 0);
         add(f);
         
-//        For a job: "JOB:outputhash{:inputhash}*\0"
+//        For a job: "JOB;outputhash{;inputhash}*\0"
         metadata = (char*) malloc((14+strlen(buffer))*sizeof(char));
-        sprintf(metadata, "JOB:%08X:%s", hash(output, m), buffer);
+        sprintf(metadata, "JOB;%08X;%s", hash(output, m), buffer);
 
 
         obj_t* obj = Obj(salt_counter++, name, bytes, metadata, 0); // use & increment the salt //TODO: not atomic
@@ -242,8 +268,8 @@ char* process_msg(char *message) {
         node_t* node = next_node(n);
 
         if (is_local(node)) {
-          obj = get_object(n); /* FIXME: Should not return objects that are not
-                                        marked as complete.*/
+          obj = get_complete_object(n);
+          if (obj == NULL) return "NACK";
 
           buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
           sprintf(buffer, "ACK:%s", obj->bytes);
@@ -272,23 +298,41 @@ char* process_msg(char *message) {
     }
     else if (!strcmp(head, "GETJ")) {
       char *buffer, *save, *outhash, *files, *hash;
-      obj_t* obj = local_next_job(0); //FIXME: locality
       hash_t n;
 
-      if (obj == NULL) return "NACK";
-      
-//        For a job: "JOB:outputhash{:inputhash}*\0"
-      strtok_r(obj->metadata, ":", &save);
-      outhash = strtok_r(NULL, ":", &save);
+      obj_t* obj = local_next_job(0);
+
+      if (obj == NULL) { // we have to forward the request FIXME
+        node_t *node = local_get_node(next_node_hash(0));
+
+        for (;;) {
+          if (!is_local(node)) {
+            buffer = message_node(node, "HAVJ");
+            if (!strncmp(buffer, "ACK", 3)) {
+              // we got a response
+              return message_node(node, "GETJ");
+            }
+          }
+          n = node->hash;
+          node = local_get_node(next_node_hash(n));
+          if (n == node-> hash) return "NACK";
+        }
+        return "NACK";
+      }
+
+      strtok_r(obj->metadata, ";", &save);
+      outhash = strtok_r(NULL, ";", &save);
 
       files = (char*)malloc(sizeof(char));
       *files = 0;
-      while ((hash = strtok_r(NULL, ":", &save)) != NULL) {
+      while ((hash = strtok_r(NULL, ";", &save)) != NULL) {
         if (!(htoi(hash, &n)==8)) {
             printf("did not parse entire hash\n");
             return "NACK";
         }
-        obj_t* o = get_object(n);
+        //FIXME: we need to get this from remote servers too. This requires
+        //  a command to get an object's name, which isn't usually revealed.
+        obj_t* o = local_get_object(n);
         buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
         hash[8]=0;
         sprintf(buffer, "%s:%s:%s", files, hash, o->name);
@@ -300,10 +344,17 @@ char* process_msg(char *message) {
       sprintf(buffer, "ACK:%s:%08X%s", obj->bytes, obj->hash, files);
       return buffer;
     }
+    else if (!strcmp(head, "HAVJ")) {
+      obj_t* obj = local_next_job(0);
+
+      if (obj == NULL) {
+        return "NACK";
+      } else {
+        return "ACK";
+      }
+    }
     //TODO: SUCC
     else if (!strcmp(head, "UPD")) {
-//    UPD:jobhash:stdout:stderr -> ACK -- update job status/results
-
       char *key = strtok_r(NULL, ":", &save_ptr);
       char *out = strtok_r(NULL, ":", &save_ptr);
       char *err = strtok_r(NULL, ":", &save_ptr);
@@ -319,8 +370,8 @@ char* process_msg(char *message) {
           return "NACK";
       }
 
-      if (update_job(n, out, err)) {
-          printf("failed to update job\n");
+      if (update_obj(n, out, err)) {
+          printf("failed to update obj\n");
           return "NACK"; 
       }
       return "ACK";
@@ -349,7 +400,7 @@ char* message_node(node_t* node, char* msg)
     printf("connecting to %s:%d\n", node->address, node->port);
     /* Open a connection to our given server. */
     res = make_connection_with(node->address, node->port, &connection);
-    if (res<0) return;
+//    if (res<0) return;
 
     send_message(connection, msg);
     recv_message(connection, &resp);

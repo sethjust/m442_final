@@ -18,7 +18,7 @@ typedef struct _obj_t {
     char *metadata; /* job or file, output filename, completed, etc.
       Format is:
         For a file: "FILE\0"
-        For a job: "JOB:outputhash{:inputhash}*\0"
+        For a job: "JOB;outputhash{;inputhash}*\0"
       */
     bool complete;
 } obj_t;

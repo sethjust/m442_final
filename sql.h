@@ -14,8 +14,9 @@ void init_db(void);
 
 /* SQL object functions */
 bool file_hash_exists(hash_t hash);
-bool local_file_is_ready(hash_t hash);
+bool local_file_is_complete(hash_t hash);
 obj_t *local_get_object(hash_t hash);
+obj_t *get_complete_object(hash_t hash);
 int local_add_object(obj_t *obj);
 int local_update_bytes(hash_t hash, char* bytes);
 int local_update_metadata(hash_t hash, char* bytes);

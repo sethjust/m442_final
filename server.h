@@ -20,7 +20,6 @@ int local_add(obj_t* obj);
 int remote_add(node_t* node, obj_t* obj);
 int add(obj_t* obj);
 char* remote_get_bytes(node_t* node, hash_t n);
-obj_t* get_object(hash_t n);
 int remote_update_job(node_t* node, hash_t n, char* out, char* err);
 int update_job(hash_t n, char* out, char* err);
 bool file_is_ready(hash_t n);
