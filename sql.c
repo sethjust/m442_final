@@ -206,8 +206,9 @@ int local_update_bytes(hash_t hash, char* bytes) {
     }
 
     sqlite3_finalize(p_stmn);
-
-    return !sqlite3_changes(db_file);
+    return !sqlite3_changes(db_file); /* we use a hash constraint, which is
+                                         unique, so we only need to check that
+                                         it's nonzero */
 }
 
 int local_update_metadata(hash_t hash, char* bytes) {
@@ -222,7 +223,7 @@ int local_update_metadata(hash_t hash, char* bytes) {
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+    return !sqlite3_changes(db_file);
 }
 
 int local_remove_object(hash_t hash)
@@ -236,7 +237,7 @@ int local_remove_object(hash_t hash)
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+    return !sqlite3_changes(db_file);
 }
 
 static void make_file_table(void)
@@ -285,7 +286,7 @@ int local_add_node(node_t *node)
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+    return !sqlite3_changes(db_file);
 }
 
 int local_remove_node(hash_t hash)
@@ -299,7 +300,7 @@ int local_remove_node(hash_t hash)
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+    return !sqlite3_changes(db_file);
 }
 
 node_t *local_get_node(hash_t hash)

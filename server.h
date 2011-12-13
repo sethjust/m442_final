@@ -26,6 +26,8 @@ char *get_obj_name(hash_t n);
 bool file_is_complete(hash_t n);
 int init_server_table(char* server, int port);
 char* message_node(node_t* node, char* msg);
+void node_failed(node_t* node)
+char* message_node_retry(node_t* node, char* msg)
 char* process_msg(char *message);
 
 #endif

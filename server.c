@@ -460,6 +460,51 @@ int init_server_table(char* server, int port) {
     my_queue = NULL;
 }
 
+void node_failed(node_t* node)
+{
+  if (local_remove_node(node->hash)) {
+    // if it didn't get removed, we've already handled this in another thread
+    // TODO: check that
+    return;
+  }
+  if (is_local(local_get_node(next_node_hash(node->hash)))) {
+    // we're the successor
+    // first backup everything
+    sqlite3_stmt *p_stmn;
+    obj_t *obj;
+
+    sqlite3_prepare_v2(db_file, "SELECT * FROM files WHERE (hash = ?)", -1, &p_stmn, NULL);
+    sqlite3_bind_int64(p_stmn, 1, hash);
+
+    /* Set hash. */
+    obj->hash = hash;
+
+    int retv = sqlite3_step(p_stmn);
+    if (retv == SQLITE_ROW) {
+        /* Get name. */
+        char *result = (char *) sqlite3_column_text(p_stmn, 1);
+        obj->name = strdup(result);
+        /* Get salt. */
+        obj->salt = sqlite3_column_int(p_stmn, 2);
+        /* Get metadata. */
+        result = (char *) sqlite3_column_text(p_stmn, 3);
+        obj->metadata = strdup(result);
+        /* Get Base64 encoded version of byte content. */
+        result = (char *) sqlite3_column_text(p_stmn, 4);
+        obj->bytes = strdup(result);
+        /* Get status. */
+        obj->complete = sqlite3_column_int(p_stmn, 5);
+    } else if (retv == SQLITE_DONE) {
+        return NULL;
+    } else {
+        file_db_crash();
+    }
+
+    sqlite3_finalize(p_stmn);
+    return obj;
+  }
+}
+
 char* message_node(node_t* node, char* msg)
 {
     char *resp, *buffer;
@@ -469,7 +514,12 @@ char* message_node(node_t* node, char* msg)
     printf("connecting to %s:%d\n", node->address, node->port);
     /* Open a connection to our given server. */
     res = make_connection_with(node->address, node->port, &connection);
-//    if (res<0) return;
+    if (res<0) { // we can't connect to the server; assume it's down
+      node_failed(node);
+      return NULL; /* callers of this function should check for a null return,
+                      and handle it like the node is down. note that this does
+                      vary by context. */
+    }
 
     send_message(connection, msg);
     recv_message(connection, &resp);
@@ -481,6 +531,17 @@ char* message_node(node_t* node, char* msg)
 
     close(connection);
     return resp;
+}
+
+char* message_node_retry(node_t* node, char* msg)
+{/* this will automatically forward the request to the next node, which is the
+  * proper behavior in many cases */
+  char *resp = NULL;
+  while (resp == NULL) {
+    node = local_get_node(next_node_hash(node->hash));
+    resp = message_node(node, msg);
+  }
+  return resp;
 }
 
 static void pop_and_gets(queue_t *queue)
