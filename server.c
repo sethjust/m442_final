@@ -108,15 +108,39 @@ int update_obj(hash_t n, char* out, char* err) {
   }
 }
 
+char *get_obj_name(hash_t n) {
+  node_t* node = next_node(n);
+
+  if (is_local(node)) {
+    return local_get_object(n)->name;
+  } else {
+    char* buffer = malloc(14*sizeof(char));
+    sprintf(buffer, "MGET:%08X", n);
+    char* resp = message_node(node, buffer);
+    free(buffer);
+    if (!strncmp(strtok_r(resp, ":", &buffer), "NACK", 4)) {
+      return NULL;
+    }
+    strtok_r(NULL, ":", &buffer); // discard the complete flag
+    return strtok_r(NULL, ":", &buffer);
+  }
+}
+
 bool file_is_complete(hash_t n) { 
   node_t* node = next_node(n);
 
   if (is_local(node)) {
     return local_file_is_complete(n);
   } else {
-//    obj_t* obj = remote_get_object(node, n);
-//    return obj->complete;
-    return true; //FIXME
+    char* buffer = malloc(14*sizeof(char));
+    sprintf(buffer, "MGET:%08X", n);
+    char* resp = message_node(node, buffer);
+    free(buffer);
+    if (!strncmp(strtok_r(resp, ":", &buffer), "NACK", 4)) {
+      return false; //FIXME
+    }
+    bool complete = strtok_r(NULL, ":", &buffer) - '0';
+    return complete;
   }
 }
 
@@ -249,7 +273,6 @@ char* process_msg(char *message) {
         return buffer;
     }
     else if (!strcmp(head, "GET")) {
-
         char *key, *buffer;
         int n;
         obj_t *obj;
@@ -332,10 +355,11 @@ char* process_msg(char *message) {
         }
         //FIXME: we need to get this from remote servers too. This requires
         //  a command to get an object's name, which isn't usually revealed.
-        obj_t* o = local_get_object(n);
-        buffer = (char*)malloc((strlen(files)+10+strlen(o->name)+1)*sizeof(char));
+//        obj_t* o = local_get_object(n);
+        char *name = get_obj_name(n);
+        buffer = (char*)malloc((strlen(files)+10+strlen(name)+1)*sizeof(char));
         hash[8]=0;
-        sprintf(buffer, "%s:%s:%s", files, hash, o->name);
+        sprintf(buffer, "%s:%s:%s", files, hash, name);
         free(files);
         files = buffer;
       }
@@ -352,6 +376,38 @@ char* process_msg(char *message) {
       } else {
         return "ACK";
       }
+    }
+    else if (!strcmp(head, "MGET")) {
+//    MGET:hash -> ACK:complete:name -- get file metadata
+
+        char *key, *buffer;
+        int n;
+        obj_t *obj;
+
+        key = strtok_r(NULL, ":", &save_ptr);
+
+        if (key == NULL) {
+            printf("did not get hash\n");
+            return "NACK";
+        }
+        if (!(htoi(key, &n)==8)) {
+            printf("did not parse entire hash\n");
+            return "NACK";
+        }
+
+        node_t* node = next_node(n);
+
+        if (is_local(node)) {
+          obj = get_complete_object(n);
+          if (obj == NULL) return "NACK";
+
+          buffer = (char*) malloc((7 + strlen(obj->name)) * sizeof(char));
+          sprintf(buffer, "ACK:%1d:%s", obj->complete, obj->name);
+
+          return buffer;
+        } else {
+          return "NACK";
+        }
     }
     //TODO: SUCC
     else if (!strcmp(head, "UPD")) {

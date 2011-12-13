@@ -90,7 +90,8 @@ The following commands are processed by storage nodes:
     ADD:name:bytes -> ACK:hash -- upload a file
     BADD:name:salt:complete:metadata:bytes -> ACK -- copy a file to a non-primary server
     GET:hash -> ACK:bytes -- get the contents of a file
-    UPD:hash:stdout[:stderr] -> ACK -- update job status/results
+    MGET:hash -> ACK:complete:name -- get file metadata
+    UPD:hash:stdout[:stderr] -> ACK -- update job or file status/results
   Job-related:
     JADD:name:sourcebytes:outputname{:inputhash}* -> ACK:jobhash:outputhash -- add a job
     GETJ -> ACK:sourcebytes:hash:{:inputhash:inputname}*
