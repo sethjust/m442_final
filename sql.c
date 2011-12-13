@@ -191,7 +191,7 @@ int local_add_object(obj_t *obj)
     }
 
     sqlite3_finalize(p_stmn);
-    return 0;
+    return !sqlite3_changes(db_file);
 }
 
 int local_update_bytes(hash_t hash, char* bytes) {

@@ -30,7 +30,17 @@ node_t* next_node(hash_t n) {
 
 int local_add(obj_t* obj) {
   printf("adding %s locally\n", tostr(obj));
-  return local_add_object(obj);
+  if (local_add_object(obj)) return -1;
+  return 0;
+}
+
+int local_add_bup(obj_t* obj) {
+  printf("adding %s locally\n", tostr(obj));
+  if (local_add_object(obj)) return -1;
+  node_t* node = next_node(next_node(hash(obj->name, obj->salt))->hash);
+  if (is_local(node)) return 0; //FIXME
+  if (strncmp(message_node(node, addstr(obj)), "ACK", 3)) return -1;
+  return 0;
 }
 
 int remote_add(node_t* node, obj_t* obj) { //FIXME
@@ -46,7 +56,7 @@ int add(obj_t* obj) {
   node_t* node = next_node(n);
 
   if (is_local(node)) {
-    return local_add(obj);
+    return local_add_bup(obj);
   } else {
     return remote_add(node, obj);
   }
@@ -187,7 +197,7 @@ char* process_msg(char *message) {
 
         if (bytes == NULL) return "NACK";
 
-        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", 1); // use & increment the salt
+        obj_t* obj = Obj(salt_counter++, name, bytes, "FILE", 1); // use & increment the salt //FIXME
 
         if (add(obj)) return "NACK"; 
 
@@ -292,7 +302,10 @@ char* process_msg(char *message) {
 
         if (is_local(node)) {
           obj = get_complete_object(n);
-          if (obj == NULL) return "NACK";
+          if (obj == NULL) {
+            printf("object must have been incomplete");
+            return "NACK";
+          }
 
           buffer = (char*) malloc((5 + strlen(obj->bytes)) * sizeof(char));
           sprintf(buffer, "ACK:%s", obj->bytes);
@@ -398,7 +411,7 @@ char* process_msg(char *message) {
         node_t* node = next_node(n);
 
         if (is_local(node)) {
-          obj = get_complete_object(n);
+          obj = local_get_object(n);
           if (obj == NULL) return "NACK";
 
           buffer = (char*) malloc((7 + strlen(obj->name)) * sizeof(char));

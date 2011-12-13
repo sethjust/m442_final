@@ -1,8 +1,12 @@
 CC = gcc
 CFLAGS = -ggdb -c -Wall -Wextra -std=gnu99
-LFLAGS = -ggdb -lsqlite3 -pthread
+LFLAGS = -ggdb -Wall -Wextra -std=gnu99 -lsqlite3 -pthread
 
 all: server
+
+test: LFLAGS += -include printing.h
+test: clean sql.c sql.h obj.c obj.h network.c network.h server.c server.h
+	$(CC) $(LFLAGS) -o server server.c network.c obj.c sql.c
 
 sql.o: sql.c sql.h obj.h
 	$(CC) $(CFLAGS) -o sql.o sql.c
